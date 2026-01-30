@@ -4,3 +4,5 @@ pandas
 openpyxl
 plotly
 reportlab
+psycopg2-binary
+
