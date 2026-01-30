@@ -34,7 +34,7 @@ def create_user(username, password, security_question, security_answer):
         """
         INSERT INTO users
             (username, password_hash, security_question, security_answer_hash, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
         """,
         (
             username,
@@ -57,7 +57,7 @@ def authenticate(username, password):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, password_hash FROM users WHERE username = ?",
+        "SELECT id, password_hash FROM users WHERE username = %s",
         (username,)
     )
     row = cur.fetchone()
@@ -77,7 +77,7 @@ def get_security_question(username: str):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT security_question FROM users WHERE username = ?",
+        "SELECT security_question FROM users WHERE username = %s",
         (username,)
     )
     row = cur.fetchone()
@@ -98,7 +98,7 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, security_answer_hash FROM users WHERE username = ?",
+        "SELECT id, security_answer_hash FROM users WHERE username = %s",
         (username,)
     )
     row = cur.fetchone()
@@ -114,7 +114,7 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
         return False
 
     cur.execute(
-        "UPDATE users SET password_hash = ? WHERE id = ?",
+        "UPDATE users SET password_hash = %s WHERE id = %s",
         (hash_text(new_password), user_id)
     )
 
