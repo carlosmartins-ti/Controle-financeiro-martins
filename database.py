@@ -13,11 +13,13 @@ def get_connection():
         sslmode="require",
         cursor_factory=RealDictCursor
     )
-    
+
 def init_db():
     conn = get_connection()
+    conn.autocommit = False
     cur = conn.cursor()
 
+    # ---------- USERS ----------
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -29,6 +31,7 @@ def init_db():
     )
     """)
 
+    # ---------- CATEGORIES ----------
     cur.execute("""
     CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY,
@@ -39,6 +42,7 @@ def init_db():
     )
     """)
 
+    # ---------- PAYMENTS ----------
     cur.execute("""
     CREATE TABLE IF NOT EXISTS payments (
         id SERIAL PRIMARY KEY,
@@ -59,6 +63,7 @@ def init_db():
     )
     """)
 
+    # ---------- BUDGETS ----------
     cur.execute("""
     CREATE TABLE IF NOT EXISTS budgets (
         id SERIAL PRIMARY KEY,
