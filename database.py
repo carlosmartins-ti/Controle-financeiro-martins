@@ -13,3 +13,65 @@ def get_connection():
         sslmode="require",
         cursor_factory=RealDictCursor
     )
+    
+def init_db():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        security_question TEXT NOT NULL,
+        security_answer_hash TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL,
+        UNIQUE(user_id, name)
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        category_id INTEGER,
+        amount NUMERIC(10,2) NOT NULL,
+        due_date DATE NOT NULL,
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        paid BOOLEAN NOT NULL DEFAULT FALSE,
+        paid_date DATE,
+        created_at TIMESTAMP NOT NULL,
+        is_credit BOOLEAN NOT NULL DEFAULT FALSE,
+        installments INTEGER NOT NULL DEFAULT 1,
+        installment_index INTEGER NOT NULL DEFAULT 1,
+        credit_group INTEGER
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS budgets (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        income NUMERIC(10,2) NOT NULL DEFAULT 0,
+        expense_goal NUMERIC(10,2) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL,
+        UNIQUE(user_id, month, year)
+    )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
