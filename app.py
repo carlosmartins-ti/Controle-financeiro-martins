@@ -9,6 +9,13 @@ from database import init_db
 from auth import authenticate, create_user, get_security_question, reset_password
 import repos
 
+
+@st.cache_resource
+def init_database():
+    init_db()
+
+init_database()
+
 # ================= SETUP =================
 st.set_page_config(
     page_title="Controle Financeiro",
