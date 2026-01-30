@@ -10,11 +10,18 @@ from auth import authenticate, create_user, get_security_question, reset_passwor
 import repos
 
 
-@st.cache_resource
-def init_database():
-    init_db()
+def safe_init_db():
+    try:
+        init_db()
+    except Exception as e:
+        st.error("Erro ao inicializar o banco de dados")
+        st.exception(e)
 
-init_database()
+
+# 🔥 Inicializa o banco APENAS UMA VEZ, depois que o Streamlit já subiu
+if "db_initialized" not in st.session_state:
+    safe_init_db()
+    st.session_state.db_initialized = True
 
 # ================= SETUP =================
 st.set_page_config(
