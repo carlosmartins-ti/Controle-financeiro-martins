@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import date, datetime
 import streamlit.components.v1 as components
+import os
 
 from database import init_db
 from auth import authenticate, create_user, get_security_question, reset_password
@@ -11,14 +12,17 @@ import repos
 # ================= SETUP =================
 st.set_page_config(
     page_title="Controle Financeiro",
-    page_icon="💳",
+    page_icon="💰",
     layout="wide"
 )
 
-with open("style.css", "r", encoding="utf-8") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
+# 🔥 Inicializa banco (cria tabelas no Postgres)
 init_db()
+
+# 🔥 CSS (proteção contra erro em deploy)
+if os.path.exists("style.css"):
+    with open("style.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 ADMIN_USERNAME = "carlos.martins"
 
