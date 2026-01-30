@@ -1,0 +1,73 @@
+/* Streamlit inject */
+.block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
+[data-testid="stSidebar"] { width: 290px; }
+.kpi-card {
+    padding: 14px 16px;
+    border: 1px solid rgba(49,51,63,0.2);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+}
+/* ===================== MOBILE + DARK/LIGHT FIX ===================== */
+@media (max-width: 768px) {
+
+  /* respeita notch / status bar */
+  .block-container {
+    padding-top: calc(env(safe-area-inset-top) + 1rem) !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* título principal */
+  h1, h2 {
+    font-size: 1.6rem !important;
+    line-height: 1.25 !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* tabs */
+  button[data-baseweb="tab"] {
+    font-size: 0.9rem !important;
+    padding: 6px 10px !important;
+  }
+
+  /* inputs */
+  input, textarea {
+    font-size: 0.95rem !important;
+  }
+
+  /* botões */
+  button {
+    width: 100% !important;
+  }
+}
+
+/* ===================== CARD DE AUTENTICAÇÃO ===================== */
+
+/* estrutura base */
+.auth-box {
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 1rem;
+}
+
+/* LIGHT MODE */
+[data-theme="light"] .auth-box {
+  background-color: #f0f2f6;
+  color: #000000;
+  border-left: 5px solid #4f8bf9;
+}
+
+/* DARK MODE */
+[data-theme="dark"] .auth-box {
+  background-color: #1e1e1e;
+  color: #eaeaea;
+  border-left: 5px solid #4f8bf9;
+}
+
+/* link do email */
+.auth-box a {
+  color: #4f8bf9;
+  text-decoration: none;
+}
