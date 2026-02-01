@@ -63,8 +63,8 @@ def authenticate(username, password):
     row = cur.fetchone()
     conn.close()
 
-    if row and verify_text(password, row[1]):
-        return row[0]
+    if row and verify_text(password, row["password_hash"]):
+        return row["id"]
 
     return None
 
@@ -83,7 +83,7 @@ def get_security_question(username: str):
     row = cur.fetchone()
     conn.close()
 
-    return row[0] if row else None
+    return row["security_question"] if row else None
 
 
 # -------------------- RESET PASSWORD --------------------
@@ -107,7 +107,8 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
         conn.close()
         return False
 
-    user_id, answer_hash = row
+    user_id = row["id"]
+    answer_hash = row["security_answer_hash"]
 
     if not verify_text(security_answer.strip(), answer_hash):
         conn.close()
