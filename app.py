@@ -1,12 +1,3 @@
-# ================= CONTROLE FINANCEIRO =================
-# Arquivo mantido com a MESMA estrutura do original.
-# Correções aplicadas:
-# 1) Compatibilidade com RealDictCursor (dict)
-# 2) Correção do DataFrame
-# 3) Correção definitiva de key duplicada em Categorias (dict loop)
-# 4) Correção FINAL Decimal x float (saldo / totais)
-# Nenhuma funcionalidade removida.
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -206,6 +197,31 @@ def screen_app():
             cat_map = {r["name"]: r["id"] for r in cats}
             cat_names = ["(Sem categoria)"] + list(cat_map.keys())
 
+            # ===== FATURA DO CARTÃO =====
+            card_cat_ids = [r["id"] for r in cats if r["name"] and "cart" in r["name"].lower()]
+            credit_rows = [r for r in rows if r["category_id"] in card_cat_ids]
+
+            if credit_rows:
+                open_credit = [r for r in credit_rows if not r["paid"]]
+                total_fatura = sum(float(r["amount"]) for r in open_credit)
+
+                st.divider()
+                st.subheader("💳 Fatura do cartão")
+
+                cA, cB = st.columns([2.2, 1.2])
+                cA.metric("Total em aberto", fmt_brl(total_fatura))
+
+                if open_credit:
+                    if cB.button("💰 Pagar fatura do cartão"):
+                        repos.mark_credit_invoice_paid(st.session_state.user_id, month, year)
+                        st.session_state.msg_ok = "Fatura do cartão marcada como paga!"
+                        st.rerun()
+                else:
+                    if cB.button("🔄 Desfazer pagamento da fatura"):
+                        repos.unmark_credit_invoice_paid(st.session_state.user_id, month, year)
+                        st.session_state.msg_ok = "Pagamento da fatura desfeito!"
+                        st.rerun()
+
             with st.expander("➕ Adicionar despesa", expanded=True):
                 with st.form("form_add_despesa", clear_on_submit=True):
                     a1, a2, a3, a4, a5 = st.columns([3, 1, 1.3, 2, 1])
@@ -268,10 +284,57 @@ def screen_app():
                             st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
+                    if f.button("✏️ Editar", key=f"edit_{pid}"):
+                        st.session_state.edit_id = pid
+                        st.rerun()
+
                     if f.button("Excluir", key=f"del_{pid}"):
                         repos.delete_payment(st.session_state.user_id, pid)
                         st.session_state.msg_ok = "Despesa excluída!"
                         st.rerun()
+
+                    # ===== FORM EDITAR =====
+                    if st.session_state.edit_id == pid:
+                        with st.form(f"edit_form_{pid}", clear_on_submit=False):
+                            n_desc = st.text_input("Descrição", value=desc_r)
+                            n_val = st.number_input("Valor", value=float(amount), step=10.0)
+                            n_venc = st.date_input(
+                                "Vencimento",
+                                value=datetime.fromisoformat(str(due)).date()
+                            )
+
+                            cats2 = repos.list_categories(st.session_state.user_id)
+                            cat_map2 = {r["name"]: r["id"] for r in cats2}
+                            cat_names2 = ["(Sem categoria)"] + list(cat_map2.keys())
+                            current_cat = cat_name_r if cat_name_r in cat_map2 else "(Sem categoria)"
+
+                            n_cat_name = st.selectbox(
+                                "Categoria",
+                                cat_names2,
+                                index=cat_names2.index(current_cat)
+                            )
+
+                            c1, c2 = st.columns(2)
+                            salvar = c1.form_submit_button("Salvar")
+                            cancelar = c2.form_submit_button("Cancelar")
+
+                        if salvar:
+                            cid2 = None if n_cat_name == "(Sem categoria)" else cat_map2[n_cat_name]
+                            repos.update_payment(
+                                st.session_state.user_id,
+                                pid,
+                                n_desc.strip(),
+                                float(n_val),
+                                str(n_venc),
+                                cid2
+                            )
+                            st.session_state.edit_id = None
+                            st.session_state.msg_ok = "Despesa atualizada com sucesso!"
+                            st.rerun()
+
+                        if cancelar:
+                            st.session_state.edit_id = None
+                            st.rerun()
 
         # ================= DASHBOARD =================
         if page == "📊 Dashboard":
