@@ -1,5 +1,6 @@
 import bcrypt
 import datetime
+from psycopg2.extras import RealDictCursor
 from database import get_connection
 
 
@@ -28,7 +29,7 @@ def create_user(username, password, security_question, security_answer):
         raise ValueError("Senha muito curta (mínimo 4).")
 
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(
         """
@@ -46,6 +47,7 @@ def create_user(username, password, security_question, security_answer):
     )
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
@@ -54,13 +56,15 @@ def authenticate(username, password):
     username = username.strip().lower()
 
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(
         "SELECT id, password_hash FROM users WHERE username = %s",
         (username,)
     )
     row = cur.fetchone()
+
+    cur.close()
     conn.close()
 
     if row and verify_text(password, row["password_hash"]):
@@ -74,13 +78,15 @@ def get_security_question(username: str):
     username = (username or "").strip().lower()
 
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(
         "SELECT security_question FROM users WHERE username = %s",
         (username,)
     )
     row = cur.fetchone()
+
+    cur.close()
     conn.close()
 
     return row["security_question"] if row else None
@@ -92,10 +98,10 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
     security_answer = security_answer or ""
 
     if len(new_password) < 4:
-        raise ValueError("Senha muito curta (mínimo 4).")
+        raise ValueError("Senha muito curta (mínimo 4)." )
 
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(
         "SELECT id, security_answer_hash FROM users WHERE username = %s",
@@ -104,6 +110,7 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
     row = cur.fetchone()
 
     if not row:
+        cur.close()
         conn.close()
         return False
 
@@ -111,6 +118,7 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
     answer_hash = row["security_answer_hash"]
 
     if not verify_text(security_answer.strip(), answer_hash):
+        cur.close()
         conn.close()
         return False
 
@@ -120,5 +128,6 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
     )
 
     conn.commit()
+    cur.close()
     conn.close()
     return True
