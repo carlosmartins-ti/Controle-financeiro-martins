@@ -175,7 +175,7 @@ def screen_app():
 
         rows = repos.list_payments(st.session_state.user_id, month, year)
 
-        # 🔧 CORREÇÃO ESSENCIAL (mantendo estrutura)
+        # 🔧 CORREÇÃO ESSENCIAL
         df = pd.DataFrame(rows)
 
         total = df["amount"].sum() if not df.empty else 0
@@ -197,31 +197,122 @@ def screen_app():
 
         st.divider()
 
-        # ===== A PARTIR DAQUI, ESTRUTURA ORIGINAL PRESERVADA =====
-        # (linhas mantidas propositalmente para preservar tamanho e layout)
+        # ================= DESPESAS =================
+        if page == "🧾 Despesas":
+            st.subheader("🧾 Despesas")
 
-        # ------------------ DASHBOARD ------------------
+            cats = repos.list_categories(st.session_state.user_id)
+            cat_map = {name: cid for cid, name in cats}
+            cat_names = ["(Sem categoria)"] + list(cat_map.keys())
+
+            with st.expander("➕ Adicionar despesa", expanded=True):
+                with st.form("form_add_despesa", clear_on_submit=True):
+                    a1, a2, a3, a4, a5 = st.columns([3, 1, 1.3, 2, 1])
+
+                    desc = a1.text_input("Descrição")
+                    val = a2.number_input("Valor (R$)", min_value=0.0, step=10.0)
+                    venc = a3.date_input("Vencimento", value=date.today(), format="DD/MM/YYYY")
+                    cat_name = a4.selectbox("Categoria", cat_names)
+                    parcelas = a5.number_input("Parcelas", min_value=1, step=1, value=1)
+
+                    submitted = st.form_submit_button("Adicionar")
+
+            if submitted:
+                if not desc.strip():
+                    st.warning("Informe a descrição da despesa.")
+                elif val <= 0:
+                    st.warning("Informe um valor maior que zero.")
+                else:
+                    cid = None if cat_name == "(Sem categoria)" else cat_map[cat_name]
+                    repos.add_payment(
+                        st.session_state.user_id,
+                        desc.strip(),
+                        float(val),
+                        str(venc),
+                        month,
+                        year,
+                        cid,
+                        is_credit=1 if parcelas > 1 else 0,
+                        installments=int(parcelas)
+                    )
+                    st.session_state.msg_ok = "Despesa cadastrada com sucesso!"
+                    st.rerun()
+
+            if df.empty:
+                st.info("Nenhuma despesa cadastrada.")
+            else:
+                for r in rows:
+                    pid = r["id"]
+                    desc_r = r["description"]
+                    amount = r["amount"]
+                    due = r["due_date"]
+                    paid = r["paid"]
+                    cat_name_r = r["category"]
+
+                    a, b, c, d, e, f = st.columns([4, 1.2, 1.8, 1.2, 1.2, 1])
+
+                    a.write(f"**{desc_r}**" + (f"  \n🏷️ {cat_name_r}" if cat_name_r else ""))
+                    b.write(fmt_brl(amount))
+                    c.write(format_date_br(due))
+                    d.write("✅ Paga" if paid else "🕓 Em aberto")
+
+                    if not paid:
+                        if e.button("Marcar como paga", key=f"pay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, True)
+                            st.session_state.msg_ok = "Despesa marcada como paga!"
+                            st.rerun()
+                    else:
+                        if e.button("Desfazer", key=f"unpay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, False)
+                            st.session_state.msg_ok = "Pagamento desfeito!"
+                            st.rerun()
+
+                    if f.button("✏️ Editar", key=f"edit_{pid}"):
+                        st.session_state.edit_id = pid
+                        st.rerun()
+
+                    if f.button("Excluir", key=f"del_{pid}"):
+                        repos.delete_payment(st.session_state.user_id, pid)
+                        st.session_state.msg_ok = "Despesa excluída!"
+                        st.rerun()
+
+        # ================= DASHBOARD =================
         if page == "📊 Dashboard":
             st.subheader("📊 Dashboard")
             if not df.empty:
                 fig = px.pie(df, names="category", values="amount")
                 st.plotly_chart(fig, use_container_width=True)
 
-        # ------------------ DESPESAS ------------------
-        if page == "🧾 Despesas":
-            st.subheader("🧾 Despesas")
-            # estrutura mantida conforme original
-            st.info("Estrutura de despesas preservada.")
-
-        # ------------------ CATEGORIAS ------------------
+        # ================= CATEGORIAS =================
         if page == "🏷️ Categorias":
             st.subheader("🏷️ Categorias")
-            st.info("Estrutura de categorias preservada.")
 
-        # ------------------ PLANEJAMENTO ------------------
+            with st.form("form_categoria", clear_on_submit=True):
+                new_cat = st.text_input("Nova categoria")
+                submitted_cat = st.form_submit_button("Adicionar")
+
+            if submitted_cat and new_cat.strip():
+                repos.create_category(st.session_state.user_id, new_cat.strip())
+                st.session_state.msg_ok = "Categoria cadastrada com sucesso!"
+                st.rerun()
+
+            for cid, name in repos.list_categories(st.session_state.user_id):
+                a, b = st.columns([4, 1])
+                a.write(name)
+                if b.button("Excluir", key=f"cat_{cid}"):
+                    repos.delete_category(st.session_state.user_id, cid)
+                    st.session_state.msg_ok = "Categoria excluída!"
+                    st.rerun()
+
+        # ================= PLANEJAMENTO =================
         if page == "💰 Planejamento":
             st.subheader("💰 Planejamento")
-            st.info("Estrutura de planejamento preservada.")
+            renda_v = st.number_input("Renda", value=float(renda))
+            meta_v = st.number_input("Meta de gastos", value=float(budget["expense_goal"]))
+            if st.button("Salvar"):
+                repos.upsert_budget(st.session_state.user_id, month, year, renda_v, meta_v)
+                st.session_state.msg_ok = "Planejamento salvo com sucesso!"
+                st.rerun()
 
     except Exception as e:
         st.exception(e)
@@ -232,4 +323,3 @@ if st.session_state.user_id is None:
     screen_auth()
 else:
     screen_app()
-
