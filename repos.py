@@ -168,3 +168,81 @@ def upsert_budget(user_id, month, year, income, expense_goal):
     conn.commit()
     cur.close()
     conn.close()
+
+def _get_card_category_ids(conn, user_id):
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id
+        FROM categories
+        WHERE user_id = %s
+          AND LOWER(name) LIKE %s
+        """,
+        (user_id, '%cart%')
+    )
+    rows = cur.fetchall()
+    cur.close()
+
+    ids = []
+    for r in rows:
+        ids.append(r[0])
+    return ids
+
+
+def mark_credit_invoice_paid(user_id, month, year):
+    conn = get_connection()
+    conn.autocommit = False
+    try:
+        card_ids = _get_card_category_ids(conn, user_id)
+        if not card_ids:
+            conn.commit()
+            return
+
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE payments
+               SET paid = TRUE,
+                   paid_date = CURRENT_DATE
+             WHERE user_id = %s
+               AND month = %s
+               AND year = %s
+               AND category_id = ANY(%s)
+               AND paid = FALSE
+            """,
+            (user_id, month, year, card_ids)
+        )
+        cur.close()
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def unmark_credit_invoice_paid(user_id, month, year):
+    conn = get_connection()
+    conn.autocommit = False
+    try:
+        card_ids = _get_card_category_ids(conn, user_id)
+        if not card_ids:
+            conn.commit()
+            return
+
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE payments
+               SET paid = FALSE,
+                   paid_date = NULL
+             WHERE user_id = %s
+               AND month = %s
+               AND year = %s
+               AND category_id = ANY(%s)
+               AND paid = TRUE
+            """,
+            (user_id, month, year, card_ids)
+        )
+        cur.close()
+        conn.commit()
+    finally:
+        conn.close()
+
