@@ -3,7 +3,7 @@
 # Correções aplicadas:
 # 1) Compatibilidade com RealDictCursor (dict)
 # 2) Correção do DataFrame
-# 3) Correção de key duplicada no botão de excluir categoria
+# 3) Correção definitiva de key duplicada em Categorias (dict loop)
 # Nenhuma funcionalidade removida.
 
 import streamlit as st
@@ -175,7 +175,6 @@ def screen_app():
         repos.seed_default_categories(st.session_state.user_id)
 
         rows = repos.list_payments(st.session_state.user_id, month, year)
-
         df = pd.DataFrame(rows)
 
         total = df["amount"].sum() if not df.empty else 0
@@ -202,7 +201,7 @@ def screen_app():
             st.subheader("🧾 Despesas")
 
             cats = repos.list_categories(st.session_state.user_id)
-            cat_map = {name: cid for cid, name in cats}
+            cat_map = {r["name"]: r["id"] for r in cats}
             cat_names = ["(Sem categoria)"] + list(cat_map.keys())
 
             with st.expander("➕ Adicionar despesa", expanded=True):
@@ -267,10 +266,6 @@ def screen_app():
                             st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
-                    if f.button("✏️ Editar", key=f"edit_{pid}"):
-                        st.session_state.edit_id = pid
-                        st.rerun()
-
                     if f.button("Excluir", key=f"del_{pid}"):
                         repos.delete_payment(st.session_state.user_id, pid)
                         st.session_state.msg_ok = "Despesa excluída!"
@@ -296,10 +291,13 @@ def screen_app():
                 st.session_state.msg_ok = "Categoria cadastrada com sucesso!"
                 st.rerun()
 
-            for cid, name in repos.list_categories(st.session_state.user_id):
+            for r in repos.list_categories(st.session_state.user_id):
+                cid = r["id"]
+                name = r["name"]
+
                 a, b = st.columns([4, 1])
                 a.write(name)
-                # 🔧 key ajustada para evitar duplicidade
+
                 if b.button("Excluir", key=f"cat_del_{cid}"):
                     repos.delete_category(st.session_state.user_id, cid)
                     st.session_state.msg_ok = "Categoria excluída!"
