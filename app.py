@@ -1,11 +1,3 @@
-# ================= CONTROLE FINANCEIRO =================
-# Arquivo mantido com a MESMA estrutura do original.
-# Correções aplicadas:
-# 1) Compatibilidade com RealDictCursor (dict)
-# 2) Correção do DataFrame
-# 3) Correção definitiva de key duplicada em Categorias (dict loop)
-# Nenhuma funcionalidade removida.
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -37,7 +29,8 @@ MESES = [
 
 # ================= UTILS =================
 def fmt_brl(v):
-    return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    # garante compatibilidade com Decimal (PostgreSQL NUMERIC)
+    return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def format_date_br(s):
     if not s:
@@ -177,8 +170,9 @@ def screen_app():
         rows = repos.list_payments(st.session_state.user_id, month, year)
         df = pd.DataFrame(rows)
 
-        total = df["amount"].sum() if not df.empty else 0
-        pago = df[df["paid"] == True]["amount"].sum() if not df.empty else 0
+        # 🔧 CORREÇÃO DECIMAL -> FLOAT (PostgreSQL NUMERIC retorna Decimal)
+        total = float(df["amount"].sum()) if not df.empty else 0.0
+        pago = float(df[df["paid"] == True]["amount"].sum()) if not df.empty else 0.0
         aberto = total - pago
 
         budget = repos.get_budget(st.session_state.user_id, month, year)
