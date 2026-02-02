@@ -270,3 +270,23 @@ def unmark_credit_invoice_paid(user_id, month, year):
         conn.commit()
     finally:
         conn.close()
+
+
+# ================= UPDATE PAYMENT =================
+def update_payment(user_id, payment_id, description, amount, due_date, category_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """UPDATE payments
+              SET description = %s,
+                  amount = %s,
+                  due_date = %s,
+                  category_id = %s
+            WHERE id = %s AND user_id = %s""" ,
+        (description, amount, due_date, category_id, payment_id, user_id)
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
