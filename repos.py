@@ -326,3 +326,33 @@ def unmark_credit_invoice_paid(user_id, month, year):
         conn.commit()
     finally:
         conn.close()
+
+# ================= EXCLUIR COMPRA PARCELADA =================
+def delete_credit_group(user_id, credit_group, only_open=True):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if only_open:
+        cur.execute(
+            """
+            DELETE FROM payments
+            WHERE user_id = %s
+              AND credit_group = %s
+              AND paid = FALSE
+            """,
+            (user_id, credit_group)
+        )
+    else:
+        cur.execute(
+            """
+            DELETE FROM payments
+            WHERE user_id = %s
+              AND credit_group = %s
+            """,
+            (user_id, credit_group)
+        )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
