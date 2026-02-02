@@ -75,35 +75,72 @@ def delete_category(user_id, category_id):
     conn.close()
 
 # ================= PAYMENTS =================
-def add_payment(user_id, description, amount, due_date, month, year,
-                category_id=None, is_credit=False, installments=1):
+def add_payment(
+    user_id,
+    description,
+    amount,
+    due_date,
+    month,
+    year,
+    category_id=None,
+    is_credit=False,
+    installments=1
+):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute(
-        """INSERT INTO payments
-           (user_id, description, category_id, amount, due_date,
-            month, year, paid, paid_date, created_at,
-            is_credit, installments, installment_index, credit_group)
-         VALUES (%s, %s, %s, %s, %s,
-                 %s, %s, %s, %s, NOW(),
-                 %s, %s, %s, %s)""" ,
-        (
-            user_id,
-            description,
-            category_id,
-            amount,
-            due_date,
-            month,
-            year,
-            False,
-            None,
-            bool(is_credit),
-            installments,
-            1,
-            None
+    amount = float(amount)
+    installments = int(installments)
+
+    credit_group = int(datetime.now().timestamp())
+    parcel_value = round(amount / installments, 2)
+
+    base_date = datetime.fromisoformat(str(due_date))
+
+    for i in range(installments):
+        parcel_month = month + i
+        parcel_year = year
+
+        while parcel_month > 12:
+            parcel_month -= 12
+            parcel_year += 1
+
+        parcel_due = base_date.replace(month=parcel_month, year=parcel_year)
+
+        cur.execute(
+            """INSERT INTO payments (
+                user_id,
+                description,
+                category_id,
+                amount,
+                due_date,
+                month,
+                year,
+                paid,
+                paid_date,
+                created_at,
+                is_credit,
+                installments,
+                installment_index,
+                credit_group
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s)""" ,
+            (
+                user_id,
+                f"{description} ({i+1}/{installments})" if installments > 1 else description,
+                category_id,
+                parcel_value,
+                parcel_due.date(),
+                parcel_month,
+                parcel_year,
+                False,
+                None,
+                bool(is_credit),
+                installments,
+                i + 1,
+                credit_group
+            )
         )
-    )
 
     conn.commit()
     cur.close()
@@ -138,6 +175,25 @@ def mark_paid(user_id, payment_id, paid):
     cur.execute(
         "UPDATE payments SET paid = %s, paid_date = %s WHERE id = %s AND user_id = %s",
         (bool(paid), datetime.now() if paid else None, payment_id, user_id)
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def update_payment(user_id, payment_id, description, amount, due_date, category_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """UPDATE payments
+              SET description = %s,
+                  amount = %s,
+                  due_date = %s,
+                  category_id = %s
+            WHERE id = %s AND user_id = %s""" ,
+        (description, amount, due_date, category_id, payment_id, user_id)
     )
 
     conn.commit()
@@ -270,23 +326,3 @@ def unmark_credit_invoice_paid(user_id, month, year):
         conn.commit()
     finally:
         conn.close()
-
-
-# ================= UPDATE PAYMENT =================
-def update_payment(user_id, payment_id, description, amount, due_date, category_id):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """UPDATE payments
-              SET description = %s,
-                  amount = %s,
-                  due_date = %s,
-                  category_id = %s
-            WHERE id = %s AND user_id = %s""" ,
-        (description, amount, due_date, category_id, payment_id, user_id)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
