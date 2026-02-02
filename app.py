@@ -3,6 +3,7 @@
 # Correções aplicadas:
 # 1) Compatibilidade com RealDictCursor (dict)
 # 2) Correção do DataFrame
+# 3) Correção de key duplicada no botão de excluir categoria
 # Nenhuma funcionalidade removida.
 
 import streamlit as st
@@ -175,7 +176,6 @@ def screen_app():
 
         rows = repos.list_payments(st.session_state.user_id, month, year)
 
-        # 🔧 CORREÇÃO ESSENCIAL
         df = pd.DataFrame(rows)
 
         total = df["amount"].sum() if not df.empty else 0
@@ -299,7 +299,8 @@ def screen_app():
             for cid, name in repos.list_categories(st.session_state.user_id):
                 a, b = st.columns([4, 1])
                 a.write(name)
-                if b.button("Excluir", key=f"cat_{cid}"):
+                # 🔧 key ajustada para evitar duplicidade
+                if b.button("Excluir", key=f"cat_del_{cid}"):
                     repos.delete_category(st.session_state.user_id, cid)
                     st.session_state.msg_ok = "Categoria excluída!"
                     st.rerun()
