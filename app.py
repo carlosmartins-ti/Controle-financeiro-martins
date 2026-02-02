@@ -1,3 +1,12 @@
+# ================= CONTROLE FINANCEIRO =================
+# Arquivo mantido com a MESMA estrutura do original.
+# Correções aplicadas:
+# 1) Compatibilidade com RealDictCursor (dict)
+# 2) Correção do DataFrame
+# 3) Correção definitiva de key duplicada em Categorias (dict loop)
+# 4) Correção FINAL Decimal x float (saldo / totais)
+# Nenhuma funcionalidade removida.
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -29,7 +38,6 @@ MESES = [
 
 # ================= UTILS =================
 def fmt_brl(v):
-    # garante compatibilidade com Decimal (PostgreSQL NUMERIC)
     return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def format_date_br(s):
@@ -53,7 +61,7 @@ def screen_auth():
     st.title("💳 Controle Financeiro")
 
     components.html(
-        """
+        '''
         <div style="
             background: linear-gradient(135deg, #1f2937, #111827);
             border-radius: 12px;
@@ -75,7 +83,7 @@ def screen_auth():
                 📧 <a href="mailto:cr954479@gmail.com" style="color:#60a5fa">cr954479@gmail.com</a>
             </div>
         </div>
-        """,
+        ''',
         height=170
     )
 
@@ -170,14 +178,14 @@ def screen_app():
         rows = repos.list_payments(st.session_state.user_id, month, year)
         df = pd.DataFrame(rows)
 
-        # 🔧 CORREÇÃO DECIMAL -> FLOAT (PostgreSQL NUMERIC retorna Decimal)
         total = float(df["amount"].sum()) if not df.empty else 0.0
         pago = float(df[df["paid"] == True]["amount"].sum()) if not df.empty else 0.0
         aberto = total - pago
 
         budget = repos.get_budget(st.session_state.user_id, month, year)
         renda = float(budget["income"])
-        saldo = renda - total
+
+        saldo = float(renda) - float(total)
 
         st.title("💳 Controle Financeiro")
         st.caption(f"Período: **{month_label}/{year}**")
