@@ -160,6 +160,7 @@ def screen_app():
                 st.session_state.username = None
                 st.rerun()
 
+        # Toast de sucesso (15s)
         if st.session_state.msg_ok:
             st.toast(st.session_state.msg_ok, icon="✅", duration=15)
             st.session_state.msg_ok = None
@@ -198,12 +199,12 @@ def screen_app():
             cat_names = ["(Sem categoria)"] + list(cat_map.keys())
 
             # ===== FATURA DO CARTÃO =====
-            card_cat_ids = [r["id"] for r in cats if r["name"] and "cart" in r["name"].lower()]
-            credit_rows = [r for r in rows if r["category_id"] in card_cat_ids]
+            card_cat_ids = [r["id"] for r in cats if r.get("name") and "cart" in str(r.get("name")).lower()]
+            credit_rows = [r for r in rows if (r.get("category_id") in card_cat_ids)]
 
             if credit_rows:
-                open_credit = [r for r in credit_rows if not r["paid"]]
-                total_fatura = sum(float(r["amount"]) for r in open_credit)
+                open_credit = [r for r in credit_rows if not r.get("paid")]
+                total_fatura = sum(float(r.get("amount") or 0) for r in open_credit)
 
                 st.divider()
                 st.subheader("💳 Fatura do cartão")
@@ -212,12 +213,12 @@ def screen_app():
                 cA.metric("Total em aberto", fmt_brl(total_fatura))
 
                 if open_credit:
-                    if cB.button("💰 Pagar fatura do cartão"):
+                    if cB.button("💰 Pagar fatura do cartão", key="pay_card"):
                         repos.mark_credit_invoice_paid(st.session_state.user_id, month, year)
                         st.session_state.msg_ok = "Fatura do cartão marcada como paga!"
                         st.rerun()
                 else:
-                    if cB.button("🔄 Desfazer pagamento da fatura"):
+                    if cB.button("🔄 Desfazer pagamento da fatura", key="unpay_card"):
                         repos.unmark_credit_invoice_paid(st.session_state.user_id, month, year)
                         st.session_state.msg_ok = "Pagamento da fatura desfeito!"
                         st.rerun()
@@ -241,6 +242,7 @@ def screen_app():
                     st.warning("Informe um valor maior que zero.")
                 else:
                     cid = None if cat_name == "(Sem categoria)" else cat_map[cat_name]
+
                     repos.add_payment(
                         st.session_state.user_id,
                         desc.strip(),
@@ -249,22 +251,29 @@ def screen_app():
                         month,
                         year,
                         cid,
-                        is_credit=1 if parcelas > 1 else 0,
+                        is_credit=True if parcelas > 1 else False,
                         installments=int(parcelas)
                     )
+
                     st.session_state.msg_ok = "Despesa cadastrada com sucesso!"
                     st.rerun()
+
+            st.divider()
 
             if df.empty:
                 st.info("Nenhuma despesa cadastrada.")
             else:
                 for r in rows:
-                    pid = r["id"]
-                    desc_r = r["description"]
-                    amount = r["amount"]
-                    due = r["due_date"]
-                    paid = r["paid"]
-                    cat_name_r = r["category"]
+                    pid = r.get("id")
+                    desc_r = r.get("description")
+                    amount = r.get("amount")
+                    due = r.get("due_date")
+                    paid = r.get("paid")
+                    cat_name_r = r.get("category")
+
+                    is_credit = r.get("is_credit")
+                    installments = r.get("installments") or 1
+                    credit_group = r.get("credit_group")
 
                     a, b, c, d, e, f = st.columns([4, 1.2, 1.8, 1.2, 1.2, 1])
 
@@ -293,18 +302,39 @@ def screen_app():
                         st.session_state.msg_ok = "Despesa excluída!"
                         st.rerun()
 
+                    # ===== OPÇÃO 3: EXCLUIR COMPRA PARCELADA (EM MASSA) =====
+                    if is_credit and int(installments) > 1 and credit_group:
+                        with st.expander("🧩 Compra parcelada"):
+                            if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
+                                repos.delete_credit_group(
+                                    st.session_state.user_id,
+                                    credit_group,
+                                    only_open=True
+                                )
+                                st.session_state.msg_ok = "Parcelas em aberto excluídas!"
+                                st.rerun()
+
+                            if st.button("❌ Excluir TODA a compra parcelada", key=f"del_all_{credit_group}_{pid}"):
+                                repos.delete_credit_group(
+                                    st.session_state.user_id,
+                                    credit_group,
+                                    only_open=False
+                                )
+                                st.session_state.msg_ok = "Compra parcelada excluída!"
+                                st.rerun()
+
                     # ===== FORM EDITAR =====
                     if st.session_state.edit_id == pid:
                         with st.form(f"edit_form_{pid}", clear_on_submit=False):
-                            n_desc = st.text_input("Descrição", value=desc_r)
-                            n_val = st.number_input("Valor", value=float(amount), step=10.0)
+                            n_desc = st.text_input("Descrição", value=str(desc_r or ""))
+                            n_val = st.number_input("Valor", value=float(amount or 0), step=10.0)
                             n_venc = st.date_input(
                                 "Vencimento",
-                                value=datetime.fromisoformat(str(due)).date()
+                                value=datetime.fromisoformat(str(due)).date() if due else date.today()
                             )
 
                             cats2 = repos.list_categories(st.session_state.user_id)
-                            cat_map2 = {r["name"]: r["id"] for r in cats2}
+                            cat_map2 = {rr["name"]: rr["id"] for rr in cats2}
                             cat_names2 = ["(Sem categoria)"] + list(cat_map2.keys())
                             current_cat = cat_name_r if cat_name_r in cat_map2 else "(Sem categoria)"
 
@@ -314,9 +344,9 @@ def screen_app():
                                 index=cat_names2.index(current_cat)
                             )
 
-                            c1, c2 = st.columns(2)
-                            salvar = c1.form_submit_button("Salvar")
-                            cancelar = c2.form_submit_button("Cancelar")
+                            col1, col2 = st.columns(2)
+                            salvar = col1.form_submit_button("Salvar")
+                            cancelar = col2.form_submit_button("Cancelar")
 
                         if salvar:
                             cid2 = None if n_cat_name == "(Sem categoria)" else cat_map2[n_cat_name]
@@ -357,8 +387,8 @@ def screen_app():
                 st.rerun()
 
             for r in repos.list_categories(st.session_state.user_id):
-                cid = r["id"]
-                name = r["name"]
+                cid = r.get("id")
+                name = r.get("name")
 
                 a, b = st.columns([4, 1])
                 a.write(name)
