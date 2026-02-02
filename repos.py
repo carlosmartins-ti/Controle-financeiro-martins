@@ -1,10 +1,3 @@
-# ================= REPOS =================
-# Estrutura original preservada.
-# Ajustes aplicados:
-# 1) Compatibilidade com RealDictCursor (dict)
-# 2) Correção de tipos BOOLEAN (paid, is_credit)
-# Nenhuma lógica removida.
-
 from database import get_connection
 from datetime import datetime
 
@@ -28,7 +21,9 @@ def seed_default_categories(user_id):
 
     for name in DEFAULT_CATEGORIES:
         cur.execute(
-            "INSERT INTO categories (user_id, name, created_at) VALUES (%s, %s, %s) ON CONFLICT (user_id, name) DO NOTHING",
+            """INSERT INTO categories (user_id, name, created_at)
+               VALUES (%s, %s, %s)
+               ON CONFLICT (user_id, name) DO NOTHING""" ,
             (user_id, name, datetime.now())
         )
 
@@ -80,13 +75,34 @@ def delete_category(user_id, category_id):
     conn.close()
 
 # ================= PAYMENTS =================
-def add_payment(user_id, description, amount, due_date, month, year, category_id=None, is_credit=False, installments=1):
+def add_payment(user_id, description, amount, due_date, month, year,
+                category_id=None, is_credit=False, installments=1):
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO payments (user_id, description, category_id, amount, due_date, month, year, paid, paid_date, created_at, is_credit, installments, installment_index, credit_group) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s)",
-        (user_id, description, category_id, amount, due_date, month, year, False, None, bool(is_credit), installments, 1, None)
+        """INSERT INTO payments
+           (user_id, description, category_id, amount, due_date,
+            month, year, paid, paid_date, created_at,
+            is_credit, installments, installment_index, credit_group)
+         VALUES (%s, %s, %s, %s, %s,
+                 %s, %s, %s, %s, NOW(),
+                 %s, %s, %s, %s)""" ,
+        (
+            user_id,
+            description,
+            category_id,
+            amount,
+            due_date,
+            month,
+            year,
+            False,
+            None,
+            bool(is_credit),
+            installments,
+            1,
+            None
+        )
     )
 
     conn.commit()
@@ -99,7 +115,13 @@ def list_payments(user_id, month, year):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT p.id, p.description, p.amount, p.due_date, p.paid, p.paid_date, p.category_id, c.name AS category, p.is_credit, p.installments, p.installment_index, p.credit_group FROM payments p LEFT JOIN categories c ON c.id = p.category_id WHERE p.user_id = %s AND p.month = %s AND p.year = %s ORDER BY p.due_date",
+        """SELECT p.id, p.description, p.amount, p.due_date, p.paid,
+                  p.paid_date, p.category_id, c.name AS category,
+                  p.is_credit, p.installments, p.installment_index, p.credit_group
+           FROM payments p
+           LEFT JOIN categories c ON c.id = p.category_id
+           WHERE p.user_id = %s AND p.month = %s AND p.year = %s
+           ORDER BY p.due_date""" ,
         (user_id, month, year)
     )
 
@@ -153,7 +175,10 @@ def get_budget(user_id, month, year):
     if not row:
         return {"income": 0.0, "expense_goal": 0.0}
 
-    return {"income": float(row["income"]), "expense_goal": float(row["expense_goal"])}
+    return {
+        "income": float(row["income"]),
+        "expense_goal": float(row["expense_goal"])
+    }
 
 
 def upsert_budget(user_id, month, year, income, expense_goal):
@@ -161,7 +186,10 @@ def upsert_budget(user_id, month, year, income, expense_goal):
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO budgets (user_id, month, year, income, expense_goal, created_at) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (user_id, month, year) DO UPDATE SET income = %s, expense_goal = %s",
+        """INSERT INTO budgets (user_id, month, year, income, expense_goal, created_at)
+           VALUES (%s, %s, %s, %s, %s, %s)
+           ON CONFLICT (user_id, month, year)
+           DO UPDATE SET income = %s, expense_goal = %s""" ,
         (user_id, month, year, income, expense_goal, datetime.now(), income, expense_goal)
     )
 
@@ -169,29 +197,27 @@ def upsert_budget(user_id, month, year, income, expense_goal):
     cur.close()
     conn.close()
 
+# ================= FATURA DO CARTÃO =================
 def _get_card_category_ids(conn, user_id):
     cur = conn.cursor()
     cur.execute(
-        """
-        SELECT id
-        FROM categories
-        WHERE user_id = %s
-          AND LOWER(name) LIKE %s
-        """,
+        """SELECT id
+           FROM categories
+           WHERE user_id = %s
+             AND LOWER(name) LIKE %s""" ,
         (user_id, '%cart%')
     )
+
     rows = cur.fetchall()
     cur.close()
 
-    ids = []
-    for r in rows:
-        ids.append(r[0])
-    return ids
+    return [r["id"] for r in rows]
 
 
 def mark_credit_invoice_paid(user_id, month, year):
     conn = get_connection()
     conn.autocommit = False
+
     try:
         card_ids = _get_card_category_ids(conn, user_id)
         if not card_ids:
@@ -200,18 +226,17 @@ def mark_credit_invoice_paid(user_id, month, year):
 
         cur = conn.cursor()
         cur.execute(
-            """
-            UPDATE payments
-               SET paid = TRUE,
-                   paid_date = CURRENT_DATE
-             WHERE user_id = %s
-               AND month = %s
-               AND year = %s
-               AND category_id = ANY(%s)
-               AND paid = FALSE
-            """,
+            """UPDATE payments
+                   SET paid = TRUE,
+                       paid_date = CURRENT_DATE
+                 WHERE user_id = %s
+                   AND month = %s
+                   AND year = %s
+                   AND category_id = ANY(%s)
+                   AND paid = FALSE""" ,
             (user_id, month, year, card_ids)
         )
+
         cur.close()
         conn.commit()
     finally:
@@ -221,6 +246,7 @@ def mark_credit_invoice_paid(user_id, month, year):
 def unmark_credit_invoice_paid(user_id, month, year):
     conn = get_connection()
     conn.autocommit = False
+
     try:
         card_ids = _get_card_category_ids(conn, user_id)
         if not card_ids:
@@ -229,20 +255,18 @@ def unmark_credit_invoice_paid(user_id, month, year):
 
         cur = conn.cursor()
         cur.execute(
-            """
-            UPDATE payments
-               SET paid = FALSE,
-                   paid_date = NULL
-             WHERE user_id = %s
-               AND month = %s
-               AND year = %s
-               AND category_id = ANY(%s)
-               AND paid = TRUE
-            """,
+            """UPDATE payments
+                   SET paid = FALSE,
+                       paid_date = NULL
+                 WHERE user_id = %s
+                   AND month = %s
+                   AND year = %s
+                   AND category_id = ANY(%s)
+                   AND paid = TRUE""" ,
             (user_id, month, year, card_ids)
         )
+
         cur.close()
         conn.commit()
     finally:
         conn.close()
-
