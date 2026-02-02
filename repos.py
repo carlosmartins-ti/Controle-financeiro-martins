@@ -262,32 +262,31 @@ def unmark_credit_invoice_paid(user_id: int, month: int, year: int):
     conn.close()
 
 # -------------------- Budget --------------------
-def get_budget(user_id: int, month: int, year: int):
+def get_budget(user_id, month, year):
     conn = get_connection()
     cur = conn.cursor()
+
     cur.execute(
-        "SELECT income, expense_goal FROM budgets WHERE user_id = %s AND month = %s AND year = %s",
+        """
+        SELECT income, expense_goal
+        FROM budgets
+        WHERE user_id = %s AND month = %s AND year = %s
+        """,
         (user_id, month, year)
     )
-    row = cur.fetchone()
-    conn.close()
-    if row:
-        return {"income": float(row[0]), "expense_goal": float(row[1])}
-    return {"income": 0.0, "expense_goal": 0.0}
 
-def upsert_budget(user_id: int, month: int, year: int, income: float, expense_goal: float):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """INSERT INTO budgets (user_id, month, year, income, expense_goal, created_at)
-           VALUES (%s, %s, %s, %s, %s, %s)
-           ON CONFLICT (user_id, month, year)
-           DO UPDATE SET income = EXCLUDED.income,
-                         expense_goal = EXCLUDED.expense_goal""",
-        (user_id, month, year, income, expense_goal, _now())
-    )
-    conn.commit()
+    row = cur.fetchone()
+    cur.close()
     conn.close()
+
+    if not row:
+        return {"income": 0.0, "expense_goal": 0.0}
+
+    # 🔧 CORREÇÃO ESSENCIAL (ANTES: row[0], row[1])
+    return {
+        "income": float(row["income"]),
+        "expense_goal": float(row["expense_goal"])
+    }
 
 # -------------------- Unir Fatura Cartão --------------------
 def merge_credit_group(user_id: int, payment_ids: list[int]):
