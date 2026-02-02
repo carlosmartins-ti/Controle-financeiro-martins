@@ -1,5 +1,6 @@
 import bcrypt
 import datetime
+import secrets
 from psycopg2.extras import RealDictCursor
 from database import get_connection
 
@@ -14,6 +15,10 @@ def hash_text(text: str) -> str:
 
 def verify_text(text: str, hashed: str) -> bool:
     return bcrypt.checkpw(text.encode("utf-8"), hashed.encode("utf-8"))
+
+
+def generate_remember_token():
+    return secrets.token_urlsafe(32)
 
 
 # -------------------- CREATE USER --------------------
@@ -32,11 +37,9 @@ def create_user(username, password, security_question, security_answer):
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(
-        """
-        INSERT INTO users
-            (username, password_hash, security_question, security_answer_hash, created_at)
-        VALUES (%s, %s, %s, %s, %s)
-        """,
+        """INSERT INTO users
+           (username, password_hash, security_question, security_answer_hash, created_at)
+           VALUES (%s, %s, %s, %s, %s)""" ,
         (
             username,
             hash_text(password),
@@ -98,7 +101,7 @@ def reset_password(username: str, security_answer: str, new_password: str) -> bo
     security_answer = security_answer or ""
 
     if len(new_password) < 4:
-        raise ValueError("Senha muito curta (mínimo 4)." )
+        raise ValueError("Senha muito curta (mínimo 4).")
 
     conn = get_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
