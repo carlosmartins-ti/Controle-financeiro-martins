@@ -14,6 +14,43 @@ DEFAULT_CATEGORIES = [
     "Outros"
 ]
 
+# ================= USERS (REMEMBER ME) =================
+def get_user_by_token(token):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, username FROM users WHERE remember_token = %s",
+        (token,)
+    )
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
+
+
+def save_remember_token(user_id, token):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE users SET remember_token = %s WHERE id = %s",
+        (token, user_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def clear_remember_token(user_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE users SET remember_token = NULL WHERE id = %s",
+        (user_id,)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
 # ================= CATEGORIES =================
 def seed_default_categories(user_id):
     conn = get_connection()
@@ -232,8 +269,8 @@ def get_budget(user_id, month, year):
         return {"income": 0.0, "expense_goal": 0.0}
 
     return {
-        "income": float(row["income"]),
-        "expense_goal": float(row["expense_goal"])
+        "income": float(row[0]),
+        "expense_goal": float(row[1])
     }
 
 
@@ -267,7 +304,7 @@ def _get_card_category_ids(conn, user_id):
     rows = cur.fetchall()
     cur.close()
 
-    return [r["id"] for r in rows]
+    return [r[0] for r in rows]
 
 
 def mark_credit_invoice_paid(user_id, month, year):
@@ -334,25 +371,20 @@ def delete_credit_group(user_id, credit_group, only_open=True):
 
     if only_open:
         cur.execute(
-            """
-            DELETE FROM payments
-            WHERE user_id = %s
-              AND credit_group = %s
-              AND paid = FALSE
-            """,
+            """DELETE FROM payments
+               WHERE user_id = %s
+                 AND credit_group = %s
+                 AND paid = FALSE""" ,
             (user_id, credit_group)
         )
     else:
         cur.execute(
-            """
-            DELETE FROM payments
-            WHERE user_id = %s
-              AND credit_group = %s
-            """,
+            """DELETE FROM payments
+               WHERE user_id = %s
+                 AND credit_group = %s""" ,
             (user_id, credit_group)
         )
 
     conn.commit()
     cur.close()
     conn.close()
-
