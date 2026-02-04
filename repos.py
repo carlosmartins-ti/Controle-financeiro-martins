@@ -269,8 +269,8 @@ def get_budget(user_id, month, year):
         return {"income": 0.0, "expense_goal": 0.0}
 
     return {
-        "income": float(row[0]),
-        "expense_goal": float(row[1])
+        "income": float(row["income"]),
+        "expense_goal": float(row["expense_goal"])
     }
 
 
