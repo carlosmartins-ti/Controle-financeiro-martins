@@ -60,7 +60,7 @@ def seed_default_categories(user_id):
         cur.execute(
             """INSERT INTO categories (user_id, name, created_at)
                VALUES (%s, %s, %s)
-               ON CONFLICT (user_id, name) DO NOTHING""" ,
+               ON CONFLICT (user_id, name) DO NOTHING""",
             (user_id, name, datetime.now())
         )
 
@@ -161,7 +161,7 @@ def add_payment(
                 installment_index,
                 credit_group
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s)""" ,
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s)""",
             (
                 user_id,
                 f"{description} ({i+1}/{installments})" if installments > 1 else description,
@@ -195,7 +195,7 @@ def list_payments(user_id, month, year):
            FROM payments p
            LEFT JOIN categories c ON c.id = p.category_id
            WHERE p.user_id = %s AND p.month = %s AND p.year = %s
-           ORDER BY p.due_date""" ,
+           ORDER BY p.due_date""",
         (user_id, month, year)
     )
 
@@ -229,7 +229,7 @@ def update_payment(user_id, payment_id, description, amount, due_date, category_
                   amount = %s,
                   due_date = %s,
                   category_id = %s
-            WHERE id = %s AND user_id = %s""" ,
+            WHERE id = %s AND user_id = %s""",
         (description, amount, due_date, category_id, payment_id, user_id)
     )
 
@@ -282,7 +282,7 @@ def upsert_budget(user_id, month, year, income, expense_goal):
         """INSERT INTO budgets (user_id, month, year, income, expense_goal, created_at)
            VALUES (%s, %s, %s, %s, %s, %s)
            ON CONFLICT (user_id, month, year)
-           DO UPDATE SET income = %s, expense_goal = %s""" ,
+           DO UPDATE SET income = %s, expense_goal = %s""",
         (user_id, month, year, income, expense_goal, datetime.now(), income, expense_goal)
     )
 
@@ -297,7 +297,7 @@ def _get_card_category_ids(conn, user_id):
         """SELECT id
            FROM categories
            WHERE user_id = %s
-             AND LOWER(name) LIKE %s""" ,
+             AND LOWER(name) LIKE %s""",
         (user_id, '%cart%')
     )
 
@@ -326,7 +326,7 @@ def mark_credit_invoice_paid(user_id, month, year):
                    AND month = %s
                    AND year = %s
                    AND category_id = ANY(%s)
-                   AND paid = FALSE""" ,
+                   AND paid = FALSE""",
             (user_id, month, year, card_ids)
         )
 
@@ -355,7 +355,7 @@ def unmark_credit_invoice_paid(user_id, month, year):
                    AND month = %s
                    AND year = %s
                    AND category_id = ANY(%s)
-                   AND paid = TRUE""" ,
+                   AND paid = TRUE""",
             (user_id, month, year, card_ids)
         )
 
@@ -374,14 +374,14 @@ def delete_credit_group(user_id, credit_group, only_open=True):
             """DELETE FROM payments
                WHERE user_id = %s
                  AND credit_group = %s
-                 AND paid = FALSE""" ,
+                 AND paid = FALSE""",
             (user_id, credit_group)
         )
     else:
         cur.execute(
             """DELETE FROM payments
                WHERE user_id = %s
-                 AND credit_group = %s""" ,
+                 AND credit_group = %s""",
             (user_id, credit_group)
         )
 
@@ -404,8 +404,8 @@ def get_expenses_report(user_id, month, year):
            WHERE p.user_id = %s
              AND p.month = %s
              AND p.year = %s
-           GROUP BY name
-           ORDER BY name""" ,
+           GROUP BY COALESCE(c.name, p.description)
+           ORDER BY COALESCE(c.name, p.description)""",
         (user_id, month, year)
     )
 
