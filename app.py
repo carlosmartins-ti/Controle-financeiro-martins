@@ -460,3 +460,46 @@ if st.session_state.user_id is None:
     screen_auth()
 else:
     screen_app()
+
+
+# ================= COMPLEMENTO (PDF TABELA + BOTÃO SAIR) =================
+# >>> APENAS ADICIONADO – NENHUMA LINHA ACIMA FOI ALTERADA <<<
+
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+
+def gerar_pdf_tabela(data, month_label, year):
+    import tempfile
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+
+    doc = SimpleDocTemplate(
+        tmp.name,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40
+    )
+
+    table_data = [["Descrição", "Valor (R$)"]]
+    total = 0.0
+
+    for r in data:
+        nome = r.get("name")
+        valor = float(r.get("total") or 0)
+        total += valor
+        table_data.append([nome, fmt_brl(valor)])
+
+    table_data.append(["TOTAL", fmt_brl(total)])
+
+    table = Table(table_data, colWidths=[360, 120])
+    table.setStyle(TableStyle([
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
+        ("ALIGN", (1,1), (-1,-1), "RIGHT"),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+    ]))
+
+    doc.build([table])
+    return tmp.name
