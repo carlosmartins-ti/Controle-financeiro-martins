@@ -47,6 +47,10 @@ for k in ["user_id", "username", "edit_id", "msg_ok"]:
     if k not in st.session_state:
         st.session_state[k] = None
 
+# ===== COMPLEMENTO (APENAS ADICIONADO): estado para botão voltar =====
+if "pdf_gerado" not in st.session_state:
+    st.session_state.pdf_gerado = False
+
 # ================= AUTH =================
 def screen_auth():
     st.title("💳 Controle Financeiro")
@@ -198,6 +202,10 @@ def screen_app():
             from reportlab.pdfgen import canvas
             import tempfile
 
+            # ===== COMPLEMENTO (APENAS ADICIONADO): PDF em TABELA =====
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+            from reportlab.lib import colors
+
             if st.button("📄 Gerar PDF das despesas"):
                 data = repos.get_expenses_report(st.session_state.user_id, month, year)
 
@@ -233,6 +241,8 @@ def screen_app():
 
                 c.save()
 
+                st.session_state.pdf_gerado = True
+
                 with open(tmp.name, "rb") as f:
                     st.download_button(
                         "⬇️ Baixar PDF",
@@ -240,6 +250,68 @@ def screen_app():
                         file_name=f"despesas_{month}_{year}.pdf",
                         mime="application/pdf"
                     )
+
+            # ===== COMPLEMENTO (APENAS ADICIONADO): botão PDF em tabela =====
+            if st.button("📄 Gerar PDF (Tabela)"):
+                data = repos.get_expenses_report(st.session_state.user_id, month, year)
+
+                tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+
+                doc = SimpleDocTemplate(
+                    tmp2.name,
+                    pagesize=A4,
+                    rightMargin=40,
+                    leftMargin=40,
+                    topMargin=40,
+                    bottomMargin=40
+                )
+
+                table_data = [[f"Resumo de Despesas - {month_label}/{year}", ""]]
+                table_data.append(["Descrição", "Valor (R$)"])
+
+                total_pdf2 = 0.0
+                for r in data:
+                    nome = r.get("name") or ""
+                    valor = float(r.get("total") or 0)
+                    total_pdf2 += valor
+                    table_data.append([nome, fmt_brl(valor)])
+
+                table_data.append(["TOTAL", fmt_brl(total_pdf2)])
+
+                table = Table(table_data, colWidths=[360, 120])
+                table.setStyle(TableStyle([
+                    ("SPAN", (0,0), (-1,0)),
+                    ("ALIGN", (0,0), (0,0), "LEFT"),
+                    ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0,0), (-1,0), 14),
+                    ("BOTTOMPADDING", (0,0), (-1,0), 10),
+
+                    ("BACKGROUND", (0,1), (-1,1), colors.lightgrey),
+                    ("FONTNAME", (0,1), (-1,1), "Helvetica-Bold"),
+
+                    ("GRID", (0,1), (-1,-1), 0.5, colors.grey),
+                    ("ALIGN", (1,2), (1,-1), "RIGHT"),
+
+                    ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+                ]))
+
+                doc.build([table])
+
+                st.session_state.pdf_gerado = True
+
+                with open(tmp2.name, "rb") as f:
+                    st.download_button(
+                        "⬇️ Baixar PDF (Tabela)",
+                        f,
+                        file_name=f"despesas_tabela_{month}_{year}.pdf",
+                        mime="application/pdf"
+                    )
+
+            # ===== COMPLEMENTO (APENAS ADICIONADO): botão voltar ao app =====
+            if st.session_state.pdf_gerado:
+                if st.button("⬅️ Voltar ao app"):
+                    st.session_state.pdf_gerado = False
+                    st.rerun()
 
             # ===== RESTANTE DO CÓDIGO ORIGINAL =====
 
@@ -325,7 +397,8 @@ def screen_app():
 
                     a, b, c, d, e, f = st.columns([4, 1.2, 1.8, 1.2, 1.2, 1])
 
-                    a.write(f"**{desc_r}**" + (f"  \n🏷️ {cat_name_r}" if cat_name_r else ""))
+                    a.write(f"**{desc_r}**" + (f"  
+🏷️ {cat_name_r}" if cat_name_r else ""))
                     b.write(fmt_brl(amount))
                     c.write(format_date_br(due))
                     d.write("✅ Paga" if paid else "🕓 Em aberto")
@@ -460,46 +533,3 @@ if st.session_state.user_id is None:
     screen_auth()
 else:
     screen_app()
-
-
-# ================= COMPLEMENTO (PDF TABELA + BOTÃO SAIR) =================
-# >>> APENAS ADICIONADO – NENHUMA LINHA ACIMA FOI ALTERADA <<<
-
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from reportlab.lib import colors
-
-def gerar_pdf_tabela(data, month_label, year):
-    import tempfile
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-
-    doc = SimpleDocTemplate(
-        tmp.name,
-        pagesize=A4,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40
-    )
-
-    table_data = [["Descrição", "Valor (R$)"]]
-    total = 0.0
-
-    for r in data:
-        nome = r.get("name")
-        valor = float(r.get("total") or 0)
-        total += valor
-        table_data.append([nome, fmt_brl(valor)])
-
-    table_data.append(["TOTAL", fmt_brl(total)])
-
-    table = Table(table_data, colWidths=[360, 120])
-    table.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
-        ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
-        ("ALIGN", (1,1), (-1,-1), "RIGHT"),
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
-    ]))
-
-    doc.build([table])
-    return tmp.name
