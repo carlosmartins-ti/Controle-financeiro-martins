@@ -193,7 +193,7 @@ def screen_app():
         if page == "🧾 Despesas":
             st.subheader("🧾 Despesas")
 
-            # ===== RELATÓRIO PDF (ADICIONADO) =====
+            # ===== RELATÓRIO PDF =====
             from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
             import tempfile
@@ -214,8 +214,8 @@ def screen_app():
                 total_pdf = 0.0
 
                 for r in data:
-                    name = r[0]
-                    val = float(r[1])
+                    name = r.get("name")
+                    val = float(r.get("total") or 0)
                     total_pdf += val
                     c.drawString(50, y, name)
                     c.drawRightString(w - 50, y, fmt_brl(val))
@@ -241,7 +241,7 @@ def screen_app():
                         mime="application/pdf"
                     )
 
-            # ===== CÓDIGO ORIGINAL CONTINUA =====
+            # ===== RESTANTE DO CÓDIGO ORIGINAL =====
 
             cats = repos.list_categories(st.session_state.user_id)
             cat_map = {r["name"]: r["id"] for r in cats}
