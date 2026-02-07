@@ -47,13 +47,18 @@ for k in ["user_id", "username", "edit_id", "msg_ok"]:
     if k not in st.session_state:
         st.session_state[k] = None
 
-# ===== COMPLEMENTO (APENAS ADICIONADO): estado para botão voltar =====
-if "pdf_gerado" not in st.session_state:
-    st.session_state.pdf_gerado = False
+# ================= COMPLEMENTO (APENAS ADICIONADO) =================
+# Estado para controlar "voltar ao app" após gerar PDF
+if "pdf_relatorio_path" not in st.session_state:
+    st.session_state.pdf_relatorio_path = None
+
+if "pdf_relatorio_nome" not in st.session_state:
+    st.session_state.pdf_relatorio_nome = None
 
 # ================= AUTH =================
 def screen_auth():
     st.title("💳 Controle Financeiro")
+
 
     components.html(
         '''
@@ -148,6 +153,7 @@ def screen_app():
             if is_admin():
                 st.caption("🔑 Administrador")
 
+
             today = date.today()
             month_label = st.selectbox("Mês", MESES, index=today.month - 1)
             year = st.selectbox("Ano", list(range(today.year - 2, today.year + 3)), index=2)
@@ -159,19 +165,24 @@ def screen_app():
                 ["📊 Dashboard", "🧾 Despesas", "🏷️ Categorias", "💰 Planejamento"]
             )
 
+
             if st.button("Sair", use_container_width=True):
                 st.session_state.user_id = None
                 st.session_state.username = None
                 st.rerun()
 
+
         if st.session_state.msg_ok:
             st.toast(st.session_state.msg_ok, icon="✅", duration=15)
             st.session_state.msg_ok = None
 
+
         repos.seed_default_categories(st.session_state.user_id)
+
 
         rows = repos.list_payments(st.session_state.user_id, month, year)
         df = pd.DataFrame(rows)
+
 
         total = float(df["amount"].sum()) if not df.empty else 0.0
         pago = float(df[df["paid"] == True]["amount"].sum()) if not df.empty else 0.0
@@ -197,14 +208,11 @@ def screen_app():
         if page == "🧾 Despesas":
             st.subheader("🧾 Despesas")
 
+
             # ===== RELATÓRIO PDF =====
             from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
             import tempfile
-
-            # ===== COMPLEMENTO (APENAS ADICIONADO): PDF em TABELA =====
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-            from reportlab.lib import colors
 
             if st.button("📄 Gerar PDF das despesas"):
                 data = repos.get_expenses_report(st.session_state.user_id, month, year)
@@ -241,8 +249,6 @@ def screen_app():
 
                 c.save()
 
-                st.session_state.pdf_gerado = True
-
                 with open(tmp.name, "rb") as f:
                     st.download_button(
                         "⬇️ Baixar PDF",
@@ -251,66 +257,79 @@ def screen_app():
                         mime="application/pdf"
                     )
 
-            # ===== COMPLEMENTO (APENAS ADICIONADO): botão PDF em tabela =====
-            if st.button("📄 Gerar PDF (Tabela)"):
+            # ================= COMPLEMENTO (APENAS ADICIONADO) =================
+            # PDF em formato de TABELA + botão "Voltar ao app"
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+            from reportlab.lib import colors
+
+            col_pdf1, col_pdf2 = st.columns([1.2, 1.2])
+            if col_pdf1.button("📄 Gerar PDF (Tabela)"):
                 data = repos.get_expenses_report(st.session_state.user_id, month, year)
 
-                tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-
+                tmp_tbl = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
                 doc = SimpleDocTemplate(
-                    tmp2.name,
+                    tmp_tbl.name,
                     pagesize=A4,
-                    rightMargin=40,
-                    leftMargin=40,
-                    topMargin=40,
-                    bottomMargin=40
+                    rightMargin=36,
+                    leftMargin=36,
+                    topMargin=36,
+                    bottomMargin=36
                 )
 
-                table_data = [[f"Resumo de Despesas - {month_label}/{year}", ""]]
+                table_data = []
+                table_data.append([f"Resumo de Despesas - {month_label}/{year}", ""])
                 table_data.append(["Descrição", "Valor (R$)"])
 
-                total_pdf2 = 0.0
+                total_tbl = 0.0
                 for r in data:
-                    nome = r.get("name") or ""
+                    nome = (r.get("name") or "").strip()
                     valor = float(r.get("total") or 0)
-                    total_pdf2 += valor
+                    total_tbl += valor
                     table_data.append([nome, fmt_brl(valor)])
 
-                table_data.append(["TOTAL", fmt_brl(total_pdf2)])
+                table_data.append(["TOTAL", fmt_brl(total_tbl)])
 
                 table = Table(table_data, colWidths=[360, 120])
                 table.setStyle(TableStyle([
                     ("SPAN", (0,0), (-1,0)),
-                    ("ALIGN", (0,0), (0,0), "LEFT"),
                     ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
                     ("FONTSIZE", (0,0), (-1,0), 14),
-                    ("BOTTOMPADDING", (0,0), (-1,0), 10),
+                    ("BOTTOMPADDING", (0,0), (-1,0), 12),
 
                     ("BACKGROUND", (0,1), (-1,1), colors.lightgrey),
                     ("FONTNAME", (0,1), (-1,1), "Helvetica-Bold"),
+                    ("FONTSIZE", (0,1), (-1,1), 11),
 
-                    ("GRID", (0,1), (-1,-1), 0.5, colors.grey),
+                    ("GRID", (0,1), (-1,-1), 0.6, colors.grey),
+                    ("VALIGN", (0,1), (-1,-1), "MIDDLE"),
+
+                    ("ALIGN", (0,0), (0,0), "LEFT"),
                     ("ALIGN", (1,2), (1,-1), "RIGHT"),
 
                     ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+                    ("BACKGROUND", (0,-1), (-1,-1), colors.whitesmoke),
                 ]))
 
                 doc.build([table])
 
-                st.session_state.pdf_gerado = True
+                st.session_state.pdf_relatorio_path = tmp_tbl.name
+                st.session_state.pdf_relatorio_nome = f"despesas_tabela_{month}_{year}.pdf"
 
-                with open(tmp2.name, "rb") as f:
+                st.success("PDF (Tabela) gerado! Agora você pode baixar.")
+                st.rerun()
+
+            if st.session_state.pdf_relatorio_path:
+                with open(st.session_state.pdf_relatorio_path, "rb") as f:
                     st.download_button(
                         "⬇️ Baixar PDF (Tabela)",
                         f,
-                        file_name=f"despesas_tabela_{month}_{year}.pdf",
+                        file_name=st.session_state.pdf_relatorio_nome or f"despesas_tabela_{month}_{year}.pdf",
                         mime="application/pdf"
                     )
 
-            # ===== COMPLEMENTO (APENAS ADICIONADO): botão voltar ao app =====
-            if st.session_state.pdf_gerado:
-                if st.button("⬅️ Voltar ao app"):
-                    st.session_state.pdf_gerado = False
+                if col_pdf2.button("⬅️ Voltar ao app"):
+                    st.session_state.pdf_relatorio_path = None
+                    st.session_state.pdf_relatorio_nome = None
                     st.rerun()
 
             # ===== RESTANTE DO CÓDIGO ORIGINAL =====
@@ -328,6 +347,7 @@ def screen_app():
 
                 st.divider()
                 st.subheader("💳 Fatura do cartão")
+
 
                 cA, cB = st.columns([2.2, 1.2])
                 cA.metric("Total em aberto", fmt_brl(total_fatura))
@@ -347,13 +367,16 @@ def screen_app():
                 with st.form("form_add_despesa", clear_on_submit=True):
                     a1, a2, a3, a4, a5 = st.columns([3, 1, 1.3, 2, 1])
 
+
                     desc = a1.text_input("Descrição")
                     val = a2.number_input("Valor (R$)", min_value=0.0, step=10.0)
                     venc = a3.date_input("Vencimento", value=date.today(), format="DD/MM/YYYY")
                     cat_name = a4.selectbox("Categoria", cat_names)
                     parcelas = a5.number_input("Parcelas", min_value=1, step=1, value=1)
 
+
                     submitted = st.form_submit_button("Adicionar")
+
 
             if submitted:
                 if not desc.strip():
@@ -362,6 +385,7 @@ def screen_app():
                     st.warning("Informe um valor maior que zero.")
                 else:
                     cid = None if cat_name == "(Sem categoria)" else cat_map[cat_name]
+
 
                     repos.add_payment(
                         st.session_state.user_id,
@@ -391,17 +415,19 @@ def screen_app():
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
 
+
                     is_credit = r.get("is_credit")
                     installments = r.get("installments") or 1
                     credit_group = r.get("credit_group")
 
+
                     a, b, c, d, e, f = st.columns([4, 1.2, 1.8, 1.2, 1.2, 1])
 
-                    a.write(f"**{desc_r}**" + (f"  
-🏷️ {cat_name_r}" if cat_name_r else ""))
+                    a.write(f"**{desc_r}**" + (f"  \n🏷️ {cat_name_r}" if cat_name_r else ""))
                     b.write(fmt_brl(amount))
                     c.write(format_date_br(due))
                     d.write("✅ Paga" if paid else "🕓 Em aberto")
+
 
                     if not paid:
                         if e.button("Marcar como paga", key=f"pay_{pid}"):
@@ -414,6 +440,7 @@ def screen_app():
                             st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
+
                     if f.button("✏️ Editar", key=f"edit_{pid}"):
                         st.session_state.edit_id = pid
                         st.rerun()
@@ -422,6 +449,7 @@ def screen_app():
                         repos.delete_payment(st.session_state.user_id, pid)
                         st.session_state.msg_ok = "Despesa excluída!"
                         st.rerun()
+
 
                     if is_credit and int(installments) > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
@@ -434,6 +462,7 @@ def screen_app():
                                 st.session_state.msg_ok = "Parcelas em aberto excluídas!"
                                 st.rerun()
 
+
                             if st.button("❌ Excluir TODA a compra parcelada", key=f"del_all_{credit_group}_{pid}"):
                                 repos.delete_credit_group(
                                     st.session_state.user_id,
@@ -442,6 +471,7 @@ def screen_app():
                                 )
                                 st.session_state.msg_ok = "Compra parcelada excluída!"
                                 st.rerun()
+
 
                     if st.session_state.edit_id == pid:
                         with st.form(f"edit_form_{pid}", clear_on_submit=False):
@@ -457,6 +487,7 @@ def screen_app():
                             cat_names2 = ["(Sem categoria)"] + list(cat_map2.keys())
                             current_cat = cat_name_r if cat_name_r in cat_map2 else "(Sem categoria)"
 
+
                             n_cat_name = st.selectbox(
                                 "Categoria",
                                 cat_names2,
@@ -466,6 +497,7 @@ def screen_app():
                             col1, col2 = st.columns(2)
                             salvar = col1.form_submit_button("Salvar")
                             cancelar = col2.form_submit_button("Cancelar")
+
 
                         if salvar:
                             cid2 = None if n_cat_name == "(Sem categoria)" else cat_map2[n_cat_name]
@@ -480,6 +512,7 @@ def screen_app():
                             st.session_state.edit_id = None
                             st.session_state.msg_ok = "Despesa atualizada com sucesso!"
                             st.rerun()
+
 
                         if cancelar:
                             st.session_state.edit_id = None
@@ -524,9 +557,11 @@ def screen_app():
                 st.session_state.msg_ok = "Planejamento salvo com sucesso!"
                 st.rerun()
 
+
     except Exception as e:
         st.exception(e)
         st.stop()
+
 
 # ================= ROUTER =================
 if st.session_state.user_id is None:
