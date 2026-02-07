@@ -214,49 +214,6 @@ def screen_app():
             from reportlab.pdfgen import canvas
             import tempfile
 
-            if st.button("📄 Gerar PDF das despesas"):
-                data = repos.get_expenses_report(st.session_state.user_id, month, year)
-
-                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-                c = canvas.Canvas(tmp.name, pagesize=A4)
-                w, h = A4
-
-                y = h - 50
-                c.setFont("Helvetica-Bold", 14)
-                c.drawString(50, y, f"Resumo de Despesas - {month_label}/{year}")
-                y -= 30
-
-                c.setFont("Helvetica", 11)
-                total_pdf = 0.0
-
-                for r in data:
-                    name = r.get("name")
-                    val = float(r.get("total") or 0)
-                    total_pdf += val
-                    c.drawString(50, y, name)
-                    c.drawRightString(w - 50, y, fmt_brl(val))
-                    y -= 18
-
-                    if y < 80:
-                        c.showPage()
-                        y = h - 50
-                        c.setFont("Helvetica", 11)
-
-                y -= 10
-                c.setFont("Helvetica-Bold", 12)
-                c.drawString(50, y, "TOTAL")
-                c.drawRightString(w - 50, y, fmt_brl(total_pdf))
-
-                c.save()
-
-                with open(tmp.name, "rb") as f:
-                    st.download_button(
-                        "⬇️ Baixar PDF",
-                        f,
-                        file_name=f"despesas_{month}_{year}.pdf",
-                        mime="application/pdf"
-                    )
-
             # ================= COMPLEMENTO (APENAS ADICIONADO) =================
             # PDF em formato de TABELA + botão "Voltar ao app"
             from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
