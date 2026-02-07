@@ -388,3 +388,28 @@ def delete_credit_group(user_id, credit_group, only_open=True):
     conn.commit()
     cur.close()
     conn.close()
+
+# ================= RELATÓRIO DE DESPESAS (PDF) =================
+def get_expenses_report(user_id, month, year):
+    """Retorna despesas consolidadas do mês/ano para geração de PDF"""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """SELECT
+               COALESCE(c.name, p.description) AS name,
+               SUM(p.amount) AS total
+           FROM payments p
+           LEFT JOIN categories c ON c.id = p.category_id
+           WHERE p.user_id = %s
+             AND p.month = %s
+             AND p.year = %s
+           GROUP BY name
+           ORDER BY name""" ,
+        (user_id, month, year)
+    )
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
