@@ -160,7 +160,6 @@ def screen_app():
                 st.session_state.username = None
                 st.rerun()
 
-        # Toast de sucesso (15s)
         if st.session_state.msg_ok:
             st.toast(st.session_state.msg_ok, icon="✅", duration=15)
             st.session_state.msg_ok = None
@@ -194,11 +193,60 @@ def screen_app():
         if page == "🧾 Despesas":
             st.subheader("🧾 Despesas")
 
+            # ===== RELATÓRIO PDF (ADICIONADO) =====
+            from reportlab.lib.pagesizes import A4
+            from reportlab.pdfgen import canvas
+            import tempfile
+
+            if st.button("📄 Gerar PDF das despesas"):
+                data = repos.get_expenses_report(st.session_state.user_id, month, year)
+
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+                c = canvas.Canvas(tmp.name, pagesize=A4)
+                w, h = A4
+
+                y = h - 50
+                c.setFont("Helvetica-Bold", 14)
+                c.drawString(50, y, f"Resumo de Despesas - {month_label}/{year}")
+                y -= 30
+
+                c.setFont("Helvetica", 11)
+                total_pdf = 0.0
+
+                for r in data:
+                    name = r[0]
+                    val = float(r[1])
+                    total_pdf += val
+                    c.drawString(50, y, name)
+                    c.drawRightString(w - 50, y, fmt_brl(val))
+                    y -= 18
+
+                    if y < 80:
+                        c.showPage()
+                        y = h - 50
+                        c.setFont("Helvetica", 11)
+
+                y -= 10
+                c.setFont("Helvetica-Bold", 12)
+                c.drawString(50, y, "TOTAL")
+                c.drawRightString(w - 50, y, fmt_brl(total_pdf))
+
+                c.save()
+
+                with open(tmp.name, "rb") as f:
+                    st.download_button(
+                        "⬇️ Baixar PDF",
+                        f,
+                        file_name=f"despesas_{month}_{year}.pdf",
+                        mime="application/pdf"
+                    )
+
+            # ===== CÓDIGO ORIGINAL CONTINUA =====
+
             cats = repos.list_categories(st.session_state.user_id)
             cat_map = {r["name"]: r["id"] for r in cats}
             cat_names = ["(Sem categoria)"] + list(cat_map.keys())
 
-            # ===== FATURA DO CARTÃO =====
             card_cat_ids = [r["id"] for r in cats if r.get("name") and "cart" in str(r.get("name")).lower()]
             credit_rows = [r for r in rows if (r.get("category_id") in card_cat_ids)]
 
@@ -302,7 +350,6 @@ def screen_app():
                         st.session_state.msg_ok = "Despesa excluída!"
                         st.rerun()
 
-                    # ===== OPÇÃO 3: EXCLUIR COMPRA PARCELADA (EM MASSA) =====
                     if is_credit and int(installments) > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
                             if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
@@ -323,7 +370,6 @@ def screen_app():
                                 st.session_state.msg_ok = "Compra parcelada excluída!"
                                 st.rerun()
 
-                    # ===== FORM EDITAR =====
                     if st.session_state.edit_id == pid:
                         with st.form(f"edit_form_{pid}", clear_on_submit=False):
                             n_desc = st.text_input("Descrição", value=str(desc_r or ""))
@@ -366,14 +412,12 @@ def screen_app():
                             st.session_state.edit_id = None
                             st.rerun()
 
-        # ================= DASHBOARD =================
         if page == "📊 Dashboard":
             st.subheader("📊 Dashboard")
             if not df.empty:
                 fig = px.pie(df, names="category", values="amount")
                 st.plotly_chart(fig, use_container_width=True)
 
-        # ================= CATEGORIAS =================
         if page == "🏷️ Categorias":
             st.subheader("🏷️ Categorias")
 
@@ -398,7 +442,6 @@ def screen_app():
                     st.session_state.msg_ok = "Categoria excluída!"
                     st.rerun()
 
-        # ================= PLANEJAMENTO =================
         if page == "💰 Planejamento":
             st.subheader("💰 Planejamento")
             renda_v = st.number_input("Renda", value=float(renda))
