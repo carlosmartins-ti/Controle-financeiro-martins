@@ -247,7 +247,7 @@ def screen_app():
 
         total_tbl += valor
 
-        status = "Pago" if pago else "Em aberto"
+        status = "Pago" if str(pago).lower() in ["true", "t", "1"] else "Em aberto"
 
         table_data.append([
             nome,
