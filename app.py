@@ -419,9 +419,8 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    components.html(f"""
+                    card_html = f"""
                     <div class="card-despesa">
-
                         <div class="card-top">
                             <div>
                                 <div class="card-titulo">{desc_r}</div>
@@ -436,9 +435,10 @@ def screen_app():
                             <div class="card-valor">{fmt_brl(amount)}</div>
                             <div class="card-data">{format_date_br(due)}</div>
                         </div>
-
                     </div>
-                    """, height=140)
+                    """
+
+                    st.markdown(card_html, unsafe_allow_html=True)
 
                     col1, col2, col3 = st.columns(3)
 
