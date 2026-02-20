@@ -377,7 +377,6 @@ def screen_app():
                 else:
                     cid = None if cat_name == "(Sem categoria)" else cat_map[cat_name]
 
-
                     repos.add_payment(
                         st.session_state.user_id,
                         desc.strip(),
@@ -387,7 +386,10 @@ def screen_app():
                         year,
                         cid,
                         is_credit=True if parcelas > 1 else False,
-                        installments=int(parcelas)
+                        installments=int(parcelas),
+                        parcel_type="total"
+                            if tipo_parcela == "Valor total da compra"
+                            else "unit"
                     )
 
                     st.session_state.msg_ok = "Despesa cadastrada com sucesso!"
