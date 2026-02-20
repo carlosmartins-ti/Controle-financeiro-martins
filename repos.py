@@ -121,7 +121,8 @@ def add_payment(
     year,
     category_id=None,
     is_credit=False,
-    installments=1
+    installments=1,
+    parcel_type="total"  # NOVO
 ):
     conn = get_connection()
     cur = conn.cursor()
@@ -130,7 +131,17 @@ def add_payment(
     installments = int(installments)
 
     credit_group = int(datetime.now().timestamp())
-    parcel_value = round(amount / installments, 2)
+    if is_credit and installments > 1:
+
+        if parcel_type == "total":
+            # valor digitado é o valor TOTAL da compra
+            parcel_value = round(amount / installments, 2)
+        else:
+            # valor digitado já é o valor de cada parcela
+            parcel_value = round(amount, 2)
+
+    else:
+        parcel_value = round(amount, 2)
 
     base_date = datetime.fromisoformat(str(due_date))
 
