@@ -396,16 +396,20 @@ def get_expenses_report(user_id, month, year):
     cur = conn.cursor()
 
     cur.execute(
-        """SELECT
-               COALESCE(c.name, p.description) AS name,
-               SUM(p.amount) AS total
-           FROM payments p
-           LEFT JOIN categories c ON c.id = p.category_id
-           WHERE p.user_id = %s
-             AND p.month = %s
-             AND p.year = %s
-           GROUP BY COALESCE(c.name, p.description)
-           ORDER BY COALESCE(c.name, p.description)""",
+        """
+        SELECT
+            COALESCE(c.name, p.description) AS name,
+            SUM(p.amount) AS total,
+            SUM(CASE WHEN p.paid = TRUE THEN p.amount ELSE 0 END) AS paid_total,
+            SUM(CASE WHEN p.paid = FALSE THEN p.amount ELSE 0 END) AS open_total
+        FROM payments p
+        LEFT JOIN categories c ON c.id = p.category_id
+        WHERE p.user_id = %s
+          AND p.month = %s
+          AND p.year = %s
+        GROUP BY COALESCE(c.name, p.description)
+        ORDER BY COALESCE(c.name, p.description)
+        """,
         (user_id, month, year)
     )
 
