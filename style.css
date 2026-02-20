@@ -71,63 +71,8 @@
   color: #4f8bf9;
   text-decoration: none;
 }
-/* ===== CARD DE DESPESA ===== */
-.card-despesa {
-    background: linear-gradient(145deg, #111827, #1f2937);
-    padding: 20px;
-    border-radius: 18px;
-    margin-bottom: 18px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-    border: 1px solid rgba(255,255,255,0.05);
-}
+/* ===================== CARD DE DESPESA ===================== */
 
-/* Título */
-.card-titulo {
-    font-size: 20px;
-    font-weight: 600;
-    color: #f3f4f6;
-}
-
-/* Categoria */
-.card-categoria {
-    font-size: 13px;
-    color: #9ca3af;
-    margin-top: 4px;
-}
-
-/* Valor */
-.card-valor {
-    font-size: 22px;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-/* Data */
-.card-data {
-    font-size: 14px;
-    color: #9ca3af;
-}
-
-/* Status badges */
-.badge-pago {
-    background: #14532d;
-    color: #4ade80;
-    padding: 6px 12px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-block;
-}
-
-.badge-aberto {
-    background: #7f1d1d;
-    color: #f87171;
-    padding: 6px 12px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-block;
-}
 .card-despesa {
     background: linear-gradient(145deg, #0f172a, #1e293b);
     padding: 22px;
@@ -135,20 +80,29 @@
     margin-bottom: 20px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.45);
     border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.2s ease;
 }
 
+.card-despesa:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.6);
+}
+
+/* Título */
 .card-titulo {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
     color: #f8fafc;
 }
 
+/* Categoria */
 .card-categoria {
     font-size: 13px;
     color: #94a3b8;
     margin-top: 4px;
 }
 
+/* Valor */
 .card-valor {
     font-size: 22px;
     font-weight: bold;
@@ -156,25 +110,45 @@
     color: #f1f5f9;
 }
 
+/* Data */
 .card-data {
     font-size: 14px;
     color: #94a3b8;
+    margin-top: 4px;
 }
 
+/* Status badges */
 .badge-pago {
-    background: #14532d;
-    color: #4ade80;
+    background: rgba(22,163,74,0.15);
+    color: #22c55e;
     padding: 6px 14px;
     border-radius: 14px;
     font-size: 13px;
     font-weight: 600;
+    display: inline-block;
 }
 
 .badge-aberto {
-    background: #7f1d1d;
-    color: #f87171;
+    background: rgba(220,38,38,0.15);
+    color: #ef4444;
     padding: 6px 14px;
     border-radius: 14px;
     font-size: 13px;
     font-weight: 600;
+    display: inline-block;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+    .card-despesa {
+        padding: 16px;
+    }
+
+    .card-titulo {
+        font-size: 16px;
+    }
+
+    .card-valor {
+        font-size: 18px;
+    }
 }
