@@ -304,7 +304,15 @@ def _get_card_category_ids(conn, user_id):
     rows = cur.fetchall()
     cur.close()
 
-    return [r[0] for r in rows]
+    if not rows:
+        return []
+
+    # Se for tupla (cursor normal)
+    if isinstance(rows[0], tuple):
+        return [r[0] for r in rows]
+
+    # Se for dict (RealDictCursor)
+    return [r["id"] for r in rows]
 
 
 def mark_credit_invoice_paid(user_id, month, year):
