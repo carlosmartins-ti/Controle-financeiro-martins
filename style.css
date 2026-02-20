@@ -128,3 +128,53 @@
     font-weight: 600;
     display: inline-block;
 }
+.card-despesa {
+    background: linear-gradient(145deg, #0f172a, #1e293b);
+    padding: 22px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.card-titulo {
+    font-size: 20px;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.card-categoria {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.card-valor {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 12px;
+    color: #f1f5f9;
+}
+
+.card-data {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.badge-pago {
+    background: #14532d;
+    color: #4ade80;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.badge-aberto {
+    background: #7f1d1d;
+    color: #f87171;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+}
