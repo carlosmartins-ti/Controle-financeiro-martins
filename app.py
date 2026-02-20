@@ -265,7 +265,6 @@ def screen_app():
                     fmt_brl(total_aberto)
                 ])
 
-                table_data.append(["TOTAL", fmt_brl(total_tbl)])
 
                 table = Table(table_data, colWidths=[220, 90, 90, 90])
                 table.setStyle(TableStyle([
