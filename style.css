@@ -73,41 +73,47 @@
 }
 /* ===================== CARD DE DESPESA ===================== */
 .card-despesa {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    border-radius: 20px;
+    background: linear-gradient(145deg, #0f172a, #1e293b);
+    border-radius: 18px;
     padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
-    color: white;
+    margin-bottom: 22px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #ffffff;
 }
 
 .card-top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
 }
 
 .card-titulo {
     font-size: 22px;
     font-weight: 600;
+    margin-bottom: 6px;
 }
 
 .card-categoria {
-    font-size: 14px;
-    opacity: 0.8;
-    margin-top: 4px;
+    display: inline-block;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
 }
 
 .card-middle {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 12px;
 }
 
 .card-valor {
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 500;
 }
 
 .card-data {
@@ -116,19 +122,24 @@
 }
 
 .badge-pago {
-    background: #16a34a;
-    padding: 6px 12px;
-    border-radius: 20px;
+    background: #15803d;
+    padding: 6px 14px;
+    border-radius: 50px;
     font-size: 13px;
+    font-weight: 600;
 }
 
 .badge-aberto {
-    background: #dc2626;
-    padding: 6px 12px;
-    border-radius: 20px;
+    background: #b91c1c;
+    padding: 6px 14px;
+    border-radius: 50px;
     font-size: 13px;
+    font-weight: 600;
 }
-.card-despesa, .card-despesa * {
-  white-space: normal !important;
-  font-family: inherit !important;
+
+/* Linha divisória antes dos botões */
+.card-divider {
+    margin-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 16px;
 }
