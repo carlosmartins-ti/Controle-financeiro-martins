@@ -71,3 +71,60 @@
   color: #4f8bf9;
   text-decoration: none;
 }
+/* ===== CARD DE DESPESA ===== */
+.card-despesa {
+    background: linear-gradient(145deg, #111827, #1f2937);
+    padding: 20px;
+    border-radius: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Título */
+.card-titulo {
+    font-size: 20px;
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+/* Categoria */
+.card-categoria {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+/* Valor */
+.card-valor {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Data */
+.card-data {
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+/* Status badges */
+.badge-pago {
+    background: #14532d;
+    color: #4ade80;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge-aberto {
+    background: #7f1d1d;
+    color: #f87171;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-block;
+}
