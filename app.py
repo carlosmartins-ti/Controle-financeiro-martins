@@ -419,7 +419,7 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    st.markdown(f"""
+                    components.html(f"""
                     <div class="card-despesa">
 
                         <div class="card-top">
@@ -438,7 +438,7 @@ def screen_app():
                         </div>
 
                     </div>
-                    """, unsafe_allow_html=True)
+                    """, height=140)
 
                     col1, col2, col3 = st.columns(3)
 
