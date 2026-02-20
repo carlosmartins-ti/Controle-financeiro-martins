@@ -72,107 +72,60 @@
   text-decoration: none;
 }
 /* ===================== CARD DE DESPESA ===================== */
-
 .card-despesa {
-    background: linear-gradient(145deg, #0f172a, #1e293b);
-    padding: 22px;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
     border-radius: 20px;
+    padding: 24px;
     margin-bottom: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.45);
-    border: 1px solid rgba(255,255,255,0.05);
-    transition: all 0.2s ease;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    color: white;
 }
-
-.card-despesa:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 14px 30px rgba(0,0,0,0.6);
-}
-
-/* Título */
-.card-titulo {
-    font-size: 18px;
-    font-weight: 600;
-    color: #f8fafc;
-}
-
-/* Categoria */
-.card-categoria {
-    font-size: 13px;
-    color: #94a3b8;
-    margin-top: 4px;
-}
-
-/* Valor */
-.card-valor {
-    font-size: 22px;
-    font-weight: bold;
-    margin-top: 12px;
-    color: #f1f5f9;
-}
-
-/* Data */
-.card-data {
-    font-size: 14px;
-    color: #94a3b8;
-    margin-top: 4px;
-}
-
-/* Status badges */
-.badge-pago {
-    background: rgba(22,163,74,0.15);
-    color: #22c55e;
-    padding: 6px 14px;
-    border-radius: 14px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-block;
-}
-
-.badge-aberto {
-    background: rgba(220,38,38,0.15);
-    color: #ef4444;
-    padding: 6px 14px;
-    border-radius: 14px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-block;
-}
-
-/* MOBILE */
-@media (max-width: 768px) {
-    .card-despesa {
-        padding: 16px;
-    }
-
-    .card-titulo {
-        font-size: 16px;
-    }
-
-    .card-valor {
-        font-size: 18px;
-    }
-}
-/* ===== LAYOUT INTERNO DO CARD ===== */
 
 .card-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 16px;
+}
+
+.card-titulo {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.card-categoria {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 4px;
 }
 
 .card-middle {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 14px;
 }
 
-/* RESPONSIVO */
-@media (max-width: 768px) {
-    .card-top,
-    .card-middle {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-    }
+.card-valor {
+    font-size: 24px;
+    font-weight: bold;
 }
+
+.card-data {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.badge-pago {
+    background: #16a34a;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+.badge-aberto {
+    background: #dc2626;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
