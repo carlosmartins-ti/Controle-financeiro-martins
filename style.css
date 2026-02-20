@@ -128,4 +128,7 @@
     border-radius: 20px;
     font-size: 13px;
 }
-
+.card-despesa, .card-despesa * {
+  white-space: normal !important;
+  font-family: inherit !important;
+}
