@@ -360,7 +360,11 @@ def screen_app():
                     venc = a3.date_input("Vencimento", value=date.today(), format="DD/MM/YYYY")
                     cat_name = a4.selectbox("Categoria", cat_names)
                     parcelas = a5.number_input("Parcelas", min_value=1, step=1, value=1)
-
+                    tipo_parcela = st.radio(
+                         "Tipo de valor",
+                         ["Valor total da compra", "Valor já é por parcela"],
+                         horizontal=True
+                    )
 
                     submitted = st.form_submit_button("Adicionar")
 
