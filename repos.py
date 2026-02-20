@@ -222,16 +222,16 @@ def screen_app():
             col_pdf1, col_pdf2 = st.columns([1.2, 1.2])
             if col_pdf1.button("📄 Gerar PDF (Tabela)"):
 
-               data = repos.list_payments(st.session_state.user_id, month, year)
+                data = repos.list_payments(st.session_state.user_id, month, year)
 
-               tmp_tbl = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-               doc = SimpleDocTemplate(
-                   tmp_tbl.name,
-                   pagesize=A4,
-                   rightMargin=36,
-                   leftMargin=36,
-                   topMargin=36,
-                   bottomMargin=36
+                tmp_tbl = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+                doc = SimpleDocTemplate(
+                    tmp_tbl.name,
+                    pagesize=A4,
+                    rightMargin=36,
+                    leftMargin=36,
+                    topMargin=36,
+                    bottomMargin=36
                 )
 
                 table_data = []
@@ -284,6 +284,8 @@ def screen_app():
 
                 st.success("PDF gerado com sucesso!")
                 st.rerun()
+            
+    
 
             if st.session_state.pdf_relatorio_path:
                 with open(st.session_state.pdf_relatorio_path, "rb") as f:
