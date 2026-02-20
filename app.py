@@ -419,63 +419,50 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    parcela_info = ""
-                    if installments > 1:
-                        parcela_info = f"<div class='card-categoria'>💳 Parcela {r.get('installment_index')}/{installments}</div>"
+                    st.markdown(f"""
+                    <div class="card-despesa">
 
-                    status_html = (
-                        '<span class="badge-pago">✔ Pago</span>'
-                        if paid
-                        else '<span class="badge-aberto">⚠ Em aberto</span>'
-                    )
-
-                    with st.container():
-
-                        st.markdown(f"""
-                        <div class="card-despesa">
-
-                            <div class="card-top">
-                                <div>
-                                    <div class="card-titulo">{desc_r}</div>
-                                    <div class="card-categoria">🏷️ {cat_name_r or ''}</div>
-                                </div>
-                                <div>
-                                    {status_html}
-                                </div>
+                        <div class="card-top">
+                            <div>
+                                <div class="card-titulo">{desc_r}</div>
+                                <div class="card-categoria">🏷️ {cat_name_r or ''}</div>
                             </div>
-
-                            <div class="card-middle">
-                                <div class="card-valor">{fmt_brl(amount)}</div>
-                                <div class="card-data">{format_date_br(due)}</div>
+                            <div>
+                                {status_html}
                             </div>
-
                         </div>
-                        """, unsafe_allow_html=True)
 
-                        col1, col2, col3 = st.columns([1,1,1], gap="small")
+                        <div class="card-middle">
+                            <div class="card-valor">{fmt_brl(amount)}</div>
+                            <div class="card-data">{format_date_br(due)}</div>
+                        </div>
 
-                        if not paid:
-                            if col1.button("✔ Pagar", key=f"pay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, True)
-                                st.session_state.msg_ok = "Despesa marcada como paga!"
-                                st.rerun()
-                        else:
-                            if col1.button("↩ Desfazer", key=f"unpay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, False)
-                                st.session_state.msg_ok = "Pagamento desfeito!"
-                                st.rerun()
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                        if col2.button("✏ Editar", key=f"edit_{pid}"):
-                            st.session_state.edit_id = pid
+                    col1, col2, col3 = st.columns(3)
+
+                    if not paid:
+                        if col1.button("✔ Pagar", key=f"pay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, True)
+                            st.session_state.msg_ok = "Despesa marcada como paga!"
+                            st.rerun()
+                    else:
+                        if col1.button("↩ Desfazer", key=f"unpay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, False)
+                            st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
-                        if col3.button("🗑 Excluir", key=f"del_{pid}"):
-                            repos.delete_payment(st.session_state.user_id, pid)
-                            st.session_state.msg_ok = "Despesa excluída!"
-                            st.rerun()
+                    if col2.button("✏ Editar", key=f"edit_{pid}"):
+                        st.session_state.edit_id = pid
+                        st.rerun()
 
-                        st.markdown("<br>", unsafe_allow_html=True)
+                    if col3.button("🗑 Excluir", key=f"del_{pid}"):
+                        repos.delete_payment(st.session_state.user_id, pid)
+                        st.session_state.msg_ok = "Despesa excluída!"
+                        st.rerun()
 
+                    st.markdown("<br>", unsafe_allow_html=True)
                     if is_credit and int(installments) > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
                             if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
