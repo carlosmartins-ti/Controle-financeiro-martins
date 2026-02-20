@@ -152,3 +152,27 @@
         font-size: 18px;
     }
 }
+/* ===== LAYOUT INTERNO DO CARD ===== */
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-middle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+}
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+    .card-top,
+    .card-middle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+}
