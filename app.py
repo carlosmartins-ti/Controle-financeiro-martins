@@ -426,16 +426,21 @@ def screen_app():
                     with st.container():
 
                         st.markdown(f"""
-                            <div class="card-despesa">
-                                <div class="card-titulo">{desc_r}</div>
-                                <div class="card-categoria">🏷️ {cat_name_r or ''}</div>
-                                {parcela_info}
-                                <div class="card-valor">{fmt_brl(amount)}</div>
-                                <div class="card-data">{format_date_br(due)}</div>
-                                <div style="margin-top:10px;">
-                                    {status_html}
-                                </div>
+                        <div class="card-despesa">
+
+                            <div class="card-titulo">{desc_r}</div>
+                            <div class="card-categoria">🏷️ {cat_name_r or ''}</div>
+
+                            {parcela_info}
+
+                            <div class="card-valor">{fmt_brl(amount)}</div>
+                            <div class="card-data">{format_date_br(due)}</div>
+
+                            <div style="margin-top:10px;">
+                                {status_html}
                             </div>
+
+                        </div>
                         """, unsafe_allow_html=True)
 
                         col1, col2, col3 = st.columns([1,1,1], gap="small")
