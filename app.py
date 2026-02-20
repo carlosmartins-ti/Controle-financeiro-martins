@@ -220,23 +220,33 @@ def screen_app():
             from reportlab.lib import colors
 
             col_pdf1, col_pdf2 = st.columns([1.2, 1.2])
+
             if col_pdf1.button("📄 Gerar PDF (Tabela)"):
 
-                data = repos.list_payments(st.session_state.user_id, month, year)
+                data = repos.list_payments(
+                    st.session_state.user_id, month, year
+                )
 
-                tmp_tbl = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+                tmp_tbl = tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".pdf"
+                )
+
                 doc = SimpleDocTemplate(
                     tmp_tbl.name,
                     pagesize=A4,
                     rightMargin=36,
                     leftMargin=36,
                     topMargin=36,
-                    bottomMargin=36
+                    bottomMargin=36,
                 )
 
                 table_data = []
-                table_data.append([f"Despesas - {month_label}/{year}", "", ""])
-                table_data.append(["Descrição", "Valor (R$)", "Status"])
+                table_data.append(
+                    [f"Despesas - {month_label}/{year}", "", ""]
+                )
+                table_data.append(
+                    ["Descrição", "Valor (R$)", "Status"]
+                )
 
                 total_tbl = 0.0
 
@@ -247,43 +257,53 @@ def screen_app():
 
                     total_tbl += valor
 
-                    status = "Pago" if str(pago).lower() in ["true", "t", "1"] else "Em aberto"
+                    status = (
+                        "Pago"
+                        if str(pago).lower() in ["true", "t", "1"]
+                        else "Em aberto"
+                    )
 
-                    table_data.append([
-                        nome,
-                        fmt_brl(valor),
-                        status
-                    ])
+                    table_data.append(
+                        [nome, fmt_brl(valor), status]
+                    )
 
-                table_data.append(["TOTAL", fmt_brl(total_tbl), ""])
+                table_data.append(
+                    ["TOTAL", fmt_brl(total_tbl), ""]
+                )
 
-                table = Table(table_data, colWidths=[260, 100, 100])
+                table = Table(
+                    table_data, colWidths=[260, 100, 100]
+                )
 
-                table.setStyle(TableStyle([
-                    ("SPAN", (0,0), (-1,0)),
-                    ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0,0), (-1,0), 14),
-                    ("BOTTOMPADDING", (0,0), (-1,0), 12),
-
-                    ("BACKGROUND", (0,1), (-1,1), colors.lightgrey),
-                    ("FONTNAME", (0,1), (-1,1), "Helvetica-Bold"),
-
-                    ("GRID", (0,1), (-1,-1), 0.6, colors.grey),
-
-                    ("ALIGN", (1,2), (1,-1), "RIGHT"),
-                    ("ALIGN", (2,2), (2,-2), "CENTER"),
-
-                    ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
-                    ("BACKGROUND", (0,-1), (-1,-1), colors.whitesmoke),
-                ]))
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("SPAN", (0, 0), (-1, 0)),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, 0), 14),
+                            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                            ("BACKGROUND", (0, 1), (-1, 1), colors.lightgrey),
+                            ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
+                            ("GRID", (0, 1), (-1, -1), 0.6, colors.grey),
+                            ("ALIGN", (1, 2), (1, -1), "RIGHT"),
+                            ("ALIGN", (2, 2), (2, -2), "CENTER"),
+                            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                            ("BACKGROUND", (0, -1), (-1, -1), colors.whitesmoke),
+                        ]
+                    )
+                )
 
                 doc.build([table])
 
                 st.session_state.pdf_relatorio_path = tmp_tbl.name
-                st.session_state.pdf_relatorio_nome = f"despesas_tabela_{month}_{year}.pdf"
+                st.session_state.pdf_relatorio_nome = (
+                    f"despesas_tabela_{month}_{year}.pdf"
+                )
 
                 st.success("PDF gerado com sucesso!")
                 st.rerun()
+
+
 
             if st.session_state.pdf_relatorio_path:
                 with open(st.session_state.pdf_relatorio_path, "rb") as f:
