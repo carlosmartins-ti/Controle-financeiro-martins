@@ -221,79 +221,69 @@ def screen_app():
 
             col_pdf1, col_pdf2 = st.columns([1.2, 1.2])
             if col_pdf1.button("📄 Gerar PDF (Tabela)"):
-                data = repos.get_expenses_report(st.session_state.user_id, month, year)
 
-                tmp_tbl = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-                doc = SimpleDocTemplate(
-                    tmp_tbl.name,
-                    pagesize=A4,
-                    rightMargin=36,
-                    leftMargin=36,
-                    topMargin=36,
-                    bottomMargin=36
-                )
+    data = repos.list_payments(st.session_state.user_id, month, year)
 
-                table_data = []
-                table_data.append([f"Resumo de Despesas - {month_label}/{year}", "", "", ""])
-                table_data.append(["Descrição", "Total", "Pago", "Em Aberto"])
+    tmp_tbl = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    doc = SimpleDocTemplate(
+        tmp_tbl.name,
+        pagesize=A4,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
 
-                total_tbl = 0.0
-                total_pago = 0.0
-                total_aberto = 0.0
+    table_data = []
+    table_data.append([f"Despesas - {month_label}/{year}", "", ""])
+    table_data.append(["Descrição", "Valor (R$)", "Status"])
 
-                for r in data:
-                    nome = (r.get("name") or "").strip()
-                    total = float(r.get("total") or 0)
-                    pago = float(r.get("paid_total") or 0)
-                    aberto = float(r.get("open_total") or 0)
- 
-                    total_tbl += total
-                    total_pago += pago
-                    total_aberto += aberto
+    total_tbl = 0.0
 
-                    table_data.append([
-                        nome,
-                        fmt_brl(total),
-                        fmt_brl(pago),
-                        fmt_brl(aberto)
-                    ])
+    for r in data:
+        nome = (r.get("description") or "").strip()
+        valor = float(r.get("amount") or 0)
+        pago = r.get("paid")
 
-                table_data.append([
-                    "TOTAL",
-                    fmt_brl(total_tbl),
-                    fmt_brl(total_pago),
-                    fmt_brl(total_aberto)
-                ])
+        total_tbl += valor
 
+        status = "Pago" if pago else "Em aberto"
 
-                table = Table(table_data, colWidths=[220, 90, 90, 90])
-                table.setStyle(TableStyle([
-                    ("SPAN", (0,0), (-1,0)),
-                    ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0,0), (-1,0), 14),
-                    ("BOTTOMPADDING", (0,0), (-1,0), 12),
+        table_data.append([
+            nome,
+            fmt_brl(valor),
+            status
+        ])
 
-                    ("BACKGROUND", (0,1), (-1,1), colors.lightgrey),
-                    ("FONTNAME", (0,1), (-1,1), "Helvetica-Bold"),
-                    ("FONTSIZE", (0,1), (-1,1), 11),
+    table_data.append(["TOTAL", fmt_brl(total_tbl), ""])
 
-                    ("GRID", (0,1), (-1,-1), 0.6, colors.grey),
-                    ("VALIGN", (0,1), (-1,-1), "MIDDLE"),
+    table = Table(table_data, colWidths=[260, 100, 100])
 
-                    ("ALIGN", (0,0), (0,0), "LEFT"),
-                    ("ALIGN", (1,2), (-1,-1), "RIGHT"),
+    table.setStyle(TableStyle([
+        ("SPAN", (0,0), (-1,0)),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,0), 14),
+        ("BOTTOMPADDING", (0,0), (-1,0), 12),
 
-                    ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
-                    ("BACKGROUND", (0,-1), (-1,-1), colors.whitesmoke),
-                ]))
+        ("BACKGROUND", (0,1), (-1,1), colors.lightgrey),
+        ("FONTNAME", (0,1), (-1,1), "Helvetica-Bold"),
 
-                doc.build([table])
+        ("GRID", (0,1), (-1,-1), 0.6, colors.grey),
 
-                st.session_state.pdf_relatorio_path = tmp_tbl.name
-                st.session_state.pdf_relatorio_nome = f"despesas_tabela_{month}_{year}.pdf"
+        ("ALIGN", (1,2), (1,-1), "RIGHT"),
+        ("ALIGN", (2,2), (2,-2), "CENTER"),
 
-                st.success("PDF (Tabela) gerado! Agora você pode baixar.")
-                st.rerun()
+        ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+        ("BACKGROUND", (0,-1), (-1,-1), colors.whitesmoke),
+    ]))
+
+    doc.build([table])
+
+    st.session_state.pdf_relatorio_path = tmp_tbl.name
+    st.session_state.pdf_relatorio_nome = f"despesas_tabela_{month}_{year}.pdf"
+
+    st.success("PDF gerado com sucesso!")
+    st.rerun()
 
             if st.session_state.pdf_relatorio_path:
                 with open(st.session_state.pdf_relatorio_path, "rb") as f:
