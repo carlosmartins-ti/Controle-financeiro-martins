@@ -234,19 +234,40 @@ def screen_app():
                 )
 
                 table_data = []
-                table_data.append([f"Resumo de Despesas - {month_label}/{year}", ""])
-                table_data.append(["Descrição", "Valor (R$)"])
+                table_data.append([f"Resumo de Despesas - {month_label}/{year}", "", "", ""])
+                table_data.append(["Descrição", "Total", "Pago", "Em Aberto"])
 
                 total_tbl = 0.0
+                total_pago = 0.0
+                total_aberto = 0.0
+
                 for r in data:
                     nome = (r.get("name") or "").strip()
-                    valor = float(r.get("total") or 0)
-                    total_tbl += valor
-                    table_data.append([nome, fmt_brl(valor)])
+                    total = float(r.get("total") or 0)
+                    pago = float(r.get("paid_total") or 0)
+                    aberto = float(r.get("open_total") or 0)
+ 
+                    total_tbl += total
+                    total_pago += pago
+                    total_aberto += aberto
+
+                    table_data.append([
+                        nome,
+                        fmt_brl(total),
+                        fmt_brl(pago),
+                        fmt_brl(aberto)
+                    ])
+
+                table_data.append([
+                    "TOTAL",
+                    fmt_brl(total_tbl),
+                    fmt_brl(total_pago),
+                    fmt_brl(total_aberto)
+                ])
 
                 table_data.append(["TOTAL", fmt_brl(total_tbl)])
 
-                table = Table(table_data, colWidths=[360, 120])
+                table = Table(table_data, colWidths=[220, 90, 90, 90])
                 table.setStyle(TableStyle([
                     ("SPAN", (0,0), (-1,0)),
                     ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
@@ -261,7 +282,7 @@ def screen_app():
                     ("VALIGN", (0,1), (-1,-1), "MIDDLE"),
 
                     ("ALIGN", (0,0), (0,0), "LEFT"),
-                    ("ALIGN", (1,2), (1,-1), "RIGHT"),
+                    ("ALIGN", (1,2), (-1,-1), "RIGHT"),
 
                     ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
                     ("BACKGROUND", (0,-1), (-1,-1), colors.whitesmoke),
