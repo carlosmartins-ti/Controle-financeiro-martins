@@ -423,21 +423,30 @@ def screen_app():
                     if installments > 1:
                         parcela_info = f"<div class='card-categoria'>💳 Parcela {r.get('installment_index')}/{installments}</div>"
 
+                    status_html = (
+                        '<span class="badge-pago">✔ Pago</span>'
+                        if paid
+                        else '<span class="badge-aberto">⚠ Em aberto</span>'
+                    )
+
                     with st.container():
 
                         st.markdown(f"""
                         <div class="card-despesa">
 
-                            <div class="card-titulo">{desc_r}</div>
-                            <div class="card-categoria">🏷️ {cat_name_r or ''}</div>
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-titulo">{desc_r}</div>
+                                    <div class="card-categoria">🏷️ {cat_name_r or ''}</div>
+                                </div>
+                                <div>
+                                    {status_html}
+                                </div>
+                            </div>
 
-                            {parcela_info}
-
-                            <div class="card-valor">{fmt_brl(amount)}</div>
-                            <div class="card-data">{format_date_br(due)}</div>
-
-                            <div style="margin-top:10px;">
-                                {status_html}
+                            <div class="card-middle">
+                                <div class="card-valor">{fmt_brl(amount)}</div>
+                                <div class="card-data">{format_date_br(due)}</div>
                             </div>
 
                         </div>
