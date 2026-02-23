@@ -430,26 +430,29 @@ def screen_app():
 
                     with st.container():
 
-                        st.markdown(f"""
+                        st.markdown(
+                            textwrap.dedent(f"""
                         <div class="card-despesa">
-                            <div class="card-top">
-                                <div>
-                                    <div class="card-titulo">🏷 {desc_r}</div>
-                                    <div class="card-categoria">{cat_name_r or ''}</div>
-                                </div>
-                                <div>
-                                    {status_html}
-                                </div>
+                        <div class="card-top">
+                            <div>
+                            <div class="card-titulo">🏷 {desc_r}</div>
+                            <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
-
-                            <div class="card-middle">
-                                <div class="card-valor">{fmt_brl(amount)}</div>
-                                <div class="card-data">{format_date_br(due)}</div>
+                            <div>
+                            {status_html}
                             </div>
-
-                            <div class="card-divider"></div>
                         </div>
-                        """, unsafe_allow_html=True)
+
+                        <div class="card-middle">
+                            <div class="card-valor">{fmt_brl(amount)}</div>
+                            <div class="card-data">{format_date_br(due)}</div>
+                        </div>
+
+                        <div class="card-divider"></div>
+                        </div>
+                        """),
+                            unsafe_allow_html=True
+                        )
 
                         col1, col2, col3 = st.columns(3)
 
