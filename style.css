@@ -78,6 +78,86 @@
   color: #4f8bf9;
   text-decoration: none;
 }
+/* =========================================================
+   CARD DESPESA (LAYOUT COMPLETO)
+========================================================= */
+
+.card-despesa {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    color: #e5e7eb;
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-titulo {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.card-categoria {
+    font-size: 13px;
+    opacity: 0.6;
+}
+
+.card-middle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.card-valor {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.card-data {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.card-divider {
+    margin-top: 12px;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
+.badge-pago {
+    background: #16a34a;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-aberto {
+    background: #b91c1c;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+    .card-middle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+}
+❗ NÃO APAGUE
+
+Você pode manter esse trecho antigo:
+
 .card-despesa {
     background: linear-gradient(135deg, #1f2937, #111827);
     border-radius: 16px;
@@ -85,23 +165,4 @@
     margin-bottom: 10px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     color: #e5e7eb;
-}
-
-/* BOTÕES RESPONSIVOS */
-div[data-testid="column"] {
-    display: flex;
-    justify-content: center;
-}
-
-button[kind="secondary"] {
-    border-radius: 10px !important;
-    width: 100%;
-}
-
-/* MOBILE FIX */
-@media (max-width: 768px) {
-    .card-middle {
-        flex-direction: column;
-        gap: 6px;
-    }
 }
