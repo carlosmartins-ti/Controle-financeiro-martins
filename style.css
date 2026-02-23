@@ -186,3 +186,96 @@
     color: #f87171 !important;
     border: 1px solid rgba(248,113,113,0.4) !important;
 }
+/* ===================== CARD PREMIUM ===================== */
+
+.card-despesa {
+    background: linear-gradient(135deg, #0b1220, #172033);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    color: #f1f5f9;
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.card-titulo {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.card-categoria-pill {
+    display: inline-block;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    font-size: 13px;
+}
+
+.card-middle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-valor {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.card-data {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.card-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 18px 0;
+}
+
+/* Badge */
+
+.badge-pago {
+    background: #16a34a;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.badge-aberto {
+    background: #dc2626;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+/* ===================== BOTÕES DO CARD ===================== */
+
+div[data-testid="column"] button {
+    border-radius: 14px !important;
+    padding: 10px 14px !important;
+    font-weight: 500 !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.05) !important;
+    color: #f1f5f9 !important;
+}
+
+div[data-testid="column"] button:hover {
+    background: rgba(255,255,255,0.12) !important;
+}
+
+/* Botão excluir levemente vermelho */
+
+div[data-testid="column"]:nth-child(3) button {
+    border: 1px solid rgba(220,38,38,0.4) !important;
+    background: rgba(220,38,38,0.1) !important;
+}
