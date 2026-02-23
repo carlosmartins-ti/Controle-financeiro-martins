@@ -80,63 +80,28 @@
 }
 .card-despesa {
     background: linear-gradient(135deg, #1f2937, #111827);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 18px;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    margin-bottom: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     color: #e5e7eb;
 }
 
-.card-top {
+/* BOTÕES RESPONSIVOS */
+div[data-testid="column"] {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: center;
 }
 
-.card-titulo {
-    font-size: 20px;
-    font-weight: 600;
+button[kind="secondary"] {
+    border-radius: 10px !important;
+    width: 100%;
 }
 
-.card-categoria {
-    font-size: 13px;
-    opacity: 0.7;
-}
-
-.card-middle {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 14px;
-}
-
-.card-valor {
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.card-data {
-    font-size: 14px;
-    opacity: 0.8;
-}
-
-.card-divider {
-    height: 1px;
-    background: rgba(255,255,255,0.08);
-    margin: 15px 0;
-}
-
-.badge-pago {
-    background: #16a34a;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.badge-aberto {
-    background: #dc2626;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
+/* MOBILE FIX */
+@media (max-width: 768px) {
+    .card-middle {
+        flex-direction: column;
+        gap: 6px;
+    }
 }
