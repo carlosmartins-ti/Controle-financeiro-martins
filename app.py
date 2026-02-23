@@ -401,7 +401,6 @@ def screen_app():
                 st.info("Nenhuma despesa cadastrada.")
             else:
                 for r in rows:
-
                     pid = r.get("id")
                     desc_r = r.get("description")
                     amount = r.get("amount")
@@ -409,178 +408,78 @@ def screen_app():
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
 
-                    installments = r.get("installments") or r.get("parcelas") or 1
-                    try:
-                        installments = int(installments)
-                    except Exception:
-                        installments = 1
 
-                    is_credit = bool(r.get("is_credit"))
-                    credit_group = (
-                        r.get("credit_group")
-                        or r.get("group_id")
-                        or r.get("credit_group_id")
-                    )
+                    is_credit = r.get("is_credit")
+                    installments = r.get("installments") or 1
+                    credit_group = r.get("credit_group")
 
-                    status_html = (
-                        '<span class="badge-pago">✔ Pago</span>'
-                        if paid
-                        else '<span class="badge-aberto">⚠ Em aberto</span>'
-                    )
 
-                    with st.container():
+                    a, b, c, d, e, f = st.columns([4, 1.2, 1.8, 1.2, 1.2, 1])
 
-                        import streamlit.components.v1 as components
+                    a.write(f"**{desc_r}**" + (f"  \n🏷️ {cat_name_r}" if cat_name_r else ""))
+                    b.write(fmt_brl(amount))
+                    c.write(format_date_br(due))
+                    d.write("✅ Paga" if paid else "🕓 Em aberto")
 
-                        components.html("""
-                        <style>
-                        .card-despesa {
-                        background: linear-gradient(135deg, #1f2937, #111827);
-                        border-radius: 16px;
-                        padding: 18px;
-                        margin-bottom: 10px;
-                        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-                        color: #e5e7eb;
-                        font-family: system-ui;
-                        }
-                        .card-top {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        }
-                        .card-middle {
-                        display: flex;
-                        justify-content: space-between;
-                        margin-top: 10px;
-                        }
-                        .card-valor { font-size: 18px; font-weight: bold; }
-                        .card-data { opacity: 0.7; }
-                        .badge-pago {
-                        background: #16a34a;
-                        padding: 4px 10px;
-                        border-radius: 8px;
-                        font-size: 12px;
-                        }
-                        .badge-aberto {
-                        background: #b91c1c;
-                        padding: 4px 10px;
-                        border-radius: 8px;
-                        font-size: 12px;
-                        }
-                        </style>
-                        """, height=0)
 
-                    with st.container():
-                        card_html = f"""
-                        <div class="card-despesa">
-                          <div class="card-top">
-                            <div>
-                              <div class="card-titulo">🏷 {desc_r}</div>
-                              <div class="card-categoria">{cat_name_r or ''}</div>
-                            </div>
-                            <div>{status_html}</div>
-                          </div>
-
-                          <div class="card-middle">
-                            <div class="card-valor">{fmt_brl(amount)}</div>
-                            <div class="card-data">{format_date_br(due)}</div>
-                          </div>
-                        </div>
-                        """
-
-                        components.html(card_html, height=150)
-
-                        col1, col2, col3 = st.columns(3)
-
-                        if col1.button("↩ Desfazer" if paid else "✔ Pagar", key=f"pay_{pid}"):
-                            repos.mark_paid(
-                                st.session_state.user_id,
-                                pid,
-                                not paid
-                            )
-                            st.session_state.msg_ok = "Status atualizado!"
+                    if not paid:
+                        if e.button("Marcar como paga", key=f"pay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, True)
+                            st.session_state.msg_ok = "Despesa marcada como paga!"
+                            st.rerun()
+                    else:
+                        if e.button("Desfazer", key=f"unpay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, False)
+                            st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
-                        if col2.button("✏ Editar", key=f"edit_{pid}"):
-                            st.session_state.edit_id = pid
-                            st.rerun()
 
-                        if col3.button("🗑 Excluir", key=f"del_{pid}"):
-                            repos.delete_payment(
-                                st.session_state.user_id,
-                                pid
-                            )
-                            st.session_state.msg_ok = "Despesa excluída!"
-                            st.rerun()
+                    if f.button("✏️ Editar", key=f"edit_{pid}"):
+                        st.session_state.edit_id = pid
+                        st.rerun()
 
-                        st.markdown("<br>", unsafe_allow_html=True)
+                    if f.button("Excluir", key=f"del_{pid}"):
+                        repos.delete_payment(st.session_state.user_id, pid)
+                        st.session_state.msg_ok = "Despesa excluída!"
+                        st.rerun()
 
-                        if is_credit and installments > 1 and credit_group:
-                            with st.expander("🧩 Compra parcelada"):
 
-                                if st.button(
-                                    "🗑️ Excluir parcelas em aberto",
-                                    key=f"del_open_{credit_group}_{pid}"
-                                ):
-                                    repos.delete_credit_group(
-                                        st.session_state.user_id,
-                                        credit_group,
-                                        only_open=True
-                                    )
-                                    st.session_state.msg_ok = "Parcelas em aberto excluídas!"
-                                    st.rerun()
+                    if is_credit and int(installments) > 1 and credit_group:
+                        with st.expander("🧩 Compra parcelada"):
+                            if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
+                                repos.delete_credit_group(
+                                    st.session_state.user_id,
+                                    credit_group,
+                                    only_open=True
+                                )
+                                st.session_state.msg_ok = "Parcelas em aberto excluídas!"
+                                st.rerun()
 
-                                if st.button(
-                                    "❌ Excluir TODA a compra parcelada",
-                                    key=f"del_all_{credit_group}_{pid}"
-                                ):
-                                    repos.delete_credit_group(
-                                        st.session_state.user_id,
-                                        credit_group,
-                                        only_open=False
-                                    )
-                                    st.session_state.msg_ok = "Compra parcelada excluída!"
-                                    st.rerun()
+
+                            if st.button("❌ Excluir TODA a compra parcelada", key=f"del_all_{credit_group}_{pid}"):
+                                repos.delete_credit_group(
+                                    st.session_state.user_id,
+                                    credit_group,
+                                    only_open=False
+                                )
+                                st.session_state.msg_ok = "Compra parcelada excluída!"
+                                st.rerun()
+
 
                     if st.session_state.edit_id == pid:
                         with st.form(f"edit_form_{pid}", clear_on_submit=False):
-
-                            n_desc = st.text_input(
-                                "Descrição",
-                                value=str(desc_r or "")
-                            )
-
-                            n_val = st.number_input(
-                                "Valor",
-                                value=float(amount or 0),
-                                step=10.0
-                            )
-
+                            n_desc = st.text_input("Descrição", value=str(desc_r or ""))
+                            n_val = st.number_input("Valor", value=float(amount or 0), step=10.0)
                             n_venc = st.date_input(
                                 "Vencimento",
-                                value=datetime.fromisoformat(
-                                    str(due)
-                                ).date() if due else date.today()
+                                value=datetime.fromisoformat(str(due)).date() if due else date.today()
                             )
 
-                            cats2 = repos.list_categories(
-                                st.session_state.user_id
-                            )
+                            cats2 = repos.list_categories(st.session_state.user_id)
+                            cat_map2 = {rr["name"]: rr["id"] for rr in cats2}
+                            cat_names2 = ["(Sem categoria)"] + list(cat_map2.keys())
+                            current_cat = cat_name_r if cat_name_r in cat_map2 else "(Sem categoria)"
 
-                            cat_map2 = {
-                                rr["name"]: rr["id"]
-                                for rr in cats2
-                            }
-
-                            cat_names2 = [
-                                "(Sem categoria)"
-                            ] + list(cat_map2.keys())
-
-                            current_cat = (
-                                cat_name_r
-                                if cat_name_r in cat_map2
-                                else "(Sem categoria)"
-                            )
 
                             n_cat_name = st.selectbox(
                                 "Categoria",
@@ -588,17 +487,13 @@ def screen_app():
                                 index=cat_names2.index(current_cat)
                             )
 
-                            col_a, col_b = st.columns(2)
-                            salvar = col_a.form_submit_button("Salvar")
-                            cancelar = col_b.form_submit_button("Cancelar")
+                            col1, col2 = st.columns(2)
+                            salvar = col1.form_submit_button("Salvar")
+                            cancelar = col2.form_submit_button("Cancelar")
+
 
                         if salvar:
-                            cid2 = (
-                                None
-                                if n_cat_name == "(Sem categoria)"
-                                else cat_map2[n_cat_name]
-                            )
-
+                            cid2 = None if n_cat_name == "(Sem categoria)" else cat_map2[n_cat_name]
                             repos.update_payment(
                                 st.session_state.user_id,
                                 pid,
@@ -607,10 +502,10 @@ def screen_app():
                                 str(n_venc),
                                 cid2
                             )
-
                             st.session_state.edit_id = None
                             st.session_state.msg_ok = "Despesa atualizada com sucesso!"
                             st.rerun()
+
 
                         if cancelar:
                             st.session_state.edit_id = None
