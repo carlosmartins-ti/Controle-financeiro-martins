@@ -1,16 +1,29 @@
-/* Streamlit inject */
-.block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
-[data-testid="stSidebar"] { width: 290px; }
+/* =========================================================
+   STREAMLIT BASE
+========================================================= */
+
+.block-container {
+    padding-top: 1.2rem;
+    padding-bottom: 2rem;
+}
+
+[data-testid="stSidebar"] {
+    width: 290px;
+}
+
 .kpi-card {
     padding: 14px 16px;
     border: 1px solid rgba(49,51,63,0.2);
     border-radius: 14px;
     background: rgba(255,255,255,0.03);
 }
-/* ===================== MOBILE + DARK/LIGHT FIX ===================== */
+
+/* =========================================================
+   RESPONSIVIDADE MOBILE
+========================================================= */
+
 @media (max-width: 768px) {
 
-  /* respeita notch / status bar */
   .block-container {
     padding-top: calc(env(safe-area-inset-top) + 1rem) !important;
     padding-left: 1rem !important;
@@ -18,7 +31,6 @@
     padding-bottom: 2rem !important;
   }
 
-  /* título principal */
   h1, h2 {
     font-size: 1.6rem !important;
     line-height: 1.25 !important;
@@ -26,60 +38,65 @@
     margin-bottom: 0.75rem !important;
   }
 
-  /* tabs */
   button[data-baseweb="tab"] {
     font-size: 0.9rem !important;
     padding: 6px 10px !important;
   }
 
-  /* inputs */
   input, textarea {
     font-size: 0.95rem !important;
   }
 
-  /* botões */
-  button {
-    width: 100% !important;
+  div[data-testid="column"] {
+      min-width: 0px !important;
   }
 }
 
-/* ===================== CARD DE AUTENTICAÇÃO ===================== */
+/* =========================================================
+   CARD DE AUTENTICAÇÃO
+========================================================= */
 
-/* estrutura base */
 .auth-box {
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 1rem;
 }
 
-/* LIGHT MODE */
 [data-theme="light"] .auth-box {
   background-color: #f0f2f6;
   color: #000000;
   border-left: 5px solid #4f8bf9;
 }
 
-/* DARK MODE */
 [data-theme="dark"] .auth-box {
   background-color: #1e1e1e;
   color: #eaeaea;
   border-left: 5px solid #4f8bf9;
 }
 
-/* link do email */
 .auth-box a {
   color: #4f8bf9;
   text-decoration: none;
 }
-/* ===================== CARD DE DESPESA ===================== */
+
+/* =========================================================
+   CARD DE DESPESA (VERSÃO FINAL PREMIUM)
+========================================================= */
+
 .card-despesa {
-    background: linear-gradient(145deg, #0f172a, #1e293b);
+    background: linear-gradient(135deg, #0b1220, #172033);
     border-radius: 18px;
-    padding: 24px;
+    padding: 22px;
     margin-bottom: 22px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.45);
-    border: 1px solid rgba(255,255,255,0.06);
-    color: #ffffff;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.05);
+    color: #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.card-despesa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 45px rgba(0,0,0,0.55);
 }
 
 .card-top {
@@ -90,7 +107,7 @@
 }
 
 .card-titulo {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 600;
     margin-bottom: 6px;
 }
@@ -98,131 +115,17 @@
 .card-categoria {
     display: inline-block;
     font-size: 13px;
-    padding: 4px 10px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-}
-
-.card-middle {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-}
-
-.card-valor {
-    font-size: 24px;
-    font-weight: 500;
-}
-
-.card-data {
-    font-size: 14px;
-    opacity: 0.7;
-}
-
-.badge-pago {
-    background: #15803d;
-    padding: 6px 14px;
-    border-radius: 50px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.badge-aberto {
-    background: #b91c1c;
-    padding: 6px 14px;
-    border-radius: 50px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-/* Linha divisória antes dos botões */
-.card-divider {
-    margin-top: 18px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding-top: 16px;
-}
-.card-divider {
-    height: 1px;
-    background: rgba(255,255,255,0.08);
-    margin: 18px 0;
-}
-
-.card-categoria {
-    display: inline-block;
     padding: 6px 12px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 12px;
-    font-size: 13px;
-}
-
-.card-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 10px;
-}
-
-.card-actions button {
-    border-radius: 12px !important;
-    padding: 8px 14px !important;
-    font-weight: 500 !important;
-}
-
-.card-actions .btn-green {
-    background: rgba(22,163,74,0.15) !important;
-    color: #22c55e !important;
-    border: 1px solid rgba(34,197,94,0.4) !important;
-}
-
-.card-actions .btn-blue {
-    background: rgba(59,130,246,0.15) !important;
-    color: #60a5fa !important;
-    border: 1px solid rgba(96,165,250,0.4) !important;
-}
-
-.card-actions .btn-red {
-    background: rgba(220,38,38,0.15) !important;
-    color: #f87171 !important;
-    border: 1px solid rgba(248,113,113,0.4) !important;
-}
-/* ===================== CARD PREMIUM ===================== */
-
-.card-despesa {
-    background: linear-gradient(135deg, #0b1220, #172033);
-    border-radius: 18px;
-    padding: 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-    color: #f1f5f9;
-}
-
-.card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-}
-
-.card-titulo {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.card-categoria-pill {
-    display: inline-block;
-    padding: 6px 12px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 14px;
-    font-size: 13px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
 }
 
 .card-middle {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 10px;
 }
 
 .card-valor {
@@ -235,20 +138,24 @@
     opacity: 0.7;
 }
 
+/* Linha divisória */
+
 .card-divider {
     height: 1px;
     background: rgba(255,255,255,0.08);
     margin: 18px 0;
 }
 
-/* Badge */
+/* =========================================================
+   BADGES
+========================================================= */
 
 .badge-pago {
     background: #16a34a;
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .badge-aberto {
@@ -256,9 +163,12 @@
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
 }
-/* ===================== BOTÕES DO CARD ===================== */
+
+/* =========================================================
+   BOTÕES DO CARD
+========================================================= */
 
 div[data-testid="column"] button {
     border-radius: 14px !important;
@@ -267,20 +177,17 @@ div[data-testid="column"] button {
     border: 1px solid rgba(255,255,255,0.15) !important;
     background: rgba(255,255,255,0.05) !important;
     color: #f1f5f9 !important;
+    transition: all 0.2s ease;
 }
 
 div[data-testid="column"] button:hover {
     background: rgba(255,255,255,0.12) !important;
+    transform: translateY(-1px);
 }
 
-/* Botão excluir levemente vermelho */
+/* Botão excluir com destaque */
 
 div[data-testid="column"]:nth-child(3) button {
-    border: 1px solid rgba(220,38,38,0.4) !important;
-    background: rgba(220,38,38,0.1) !important;
-}
-@media (max-width: 768px) {
-    div[data-testid="column"] {
-        min-width: 0px !important;
-    }
+    border: 1px solid rgba(220,38,38,0.5) !important;
+    background: rgba(220,38,38,0.12) !important;
 }
