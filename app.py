@@ -408,18 +408,19 @@ def screen_app():
                     due = r.get("due_date")
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
-                    
-                     # ===== FIX: garante que essas variáveis existam sempre =====
+
                     installments = r.get("installments") or r.get("parcelas") or 1
                     try:
                         installments = int(installments)
                     except Exception:
                         installments = 1
 
-                    is_credit = bool(r.get("is_credit"))  # vem do banco (True/False)
-
-                    # grupo da compra parcelada (se existir no seu banco)
-                    credit_group = r.get("credit_group") or r.get("group_id") or r.get("credit_group_id")
+                    is_credit = bool(r.get("is_credit"))
+                    credit_group = (
+                        r.get("credit_group")
+                        or r.get("group_id")
+                        or r.get("credit_group_id")
+                    )
 
                     status_html = (
                         '<span class="badge-pago">✔ Pago</span>'
@@ -427,83 +428,120 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-             with st.container():
+                    with st.container():
 
-                    st.markdown(f"""
-                    <div class="card-despesa">
-
-                        <div class="card-top">
-                            <div>
-                                <div class="card-titulo">🏷 {desc_r}</div>
-                                <div class="card-categoria">{cat_name_r or ''}</div>
+                        st.markdown(f"""
+                        <div class="card-despesa">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-titulo">🏷 {desc_r}</div>
+                                    <div class="card-categoria">{cat_name_r or ''}</div>
+                                </div>
+                                <div>
+                                    {status_html}
+                                </div>
                             </div>
-                            <div>
-                                {status_html}
+
+                            <div class="card-middle">
+                                <div class="card-valor">{fmt_brl(amount)}</div>
+                                <div class="card-data">{format_date_br(due)}</div>
                             </div>
+
+                            <div class="card-divider"></div>
                         </div>
+                        """, unsafe_allow_html=True)
 
-                        <div class="card-middle">
-                            <div class="card-valor">{fmt_brl(amount)}</div>
-                            <div class="card-data">{format_date_br(due)}</div>
-                        </div>
+                        col1, col2, col3 = st.columns(3)
 
-                        <div class="card-divider"></div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        if col1.button("↩ Desfazer" if paid else "✔ Pagar", key=f"pay_{pid}"):
+                            repos.mark_paid(
+                                st.session_state.user_id,
+                                pid,
+                                not paid
+                            )
+                            st.session_state.msg_ok = "Status atualizado!"
+                            st.rerun()
 
-                    col1, col2, col3 = st.columns(3)
+                        if col2.button("✏ Editar", key=f"edit_{pid}"):
+                            st.session_state.edit_id = pid
+                            st.rerun()
 
-                    if col1.button("↩ Desfazer" if paid else "✔ Pagar", key=f"pay_{pid}"):
-                        repos.mark_paid(st.session_state.user_id, pid, not paid)
-                        st.session_state.msg_ok = "Status atualizado!"
-                        st.rerun()
+                        if col3.button("🗑 Excluir", key=f"del_{pid}"):
+                            repos.delete_payment(
+                                st.session_state.user_id,
+                                pid
+                            )
+                            st.session_state.msg_ok = "Despesa excluída!"
+                            st.rerun()
 
-                    if col2.button("✏ Editar", key=f"edit_{pid}"):
-                        st.session_state.edit_id = pid
-                        st.rerun()
+                        st.markdown("<br>", unsafe_allow_html=True)
 
-                    if col3.button("🗑 Excluir", key=f"del_{pid}"):
-                        repos.delete_payment(st.session_state.user_id, pid)
-                        st.session_state.msg_ok = "Despesa excluída!"
-                        st.rerun()
+                        if is_credit and installments > 1 and credit_group:
+                            with st.expander("🧩 Compra parcelada"):
 
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if is_credit and installments > 1 and credit_group:
-                        with st.expander("🧩 Compra parcelada"):
-                            if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
-                                repos.delete_credit_group(
-                                    st.session_state.user_id,
-                                    credit_group,
-                                    only_open=True
-                                )
-                                st.session_state.msg_ok = "Parcelas em aberto excluídas!"
-                                st.rerun()
+                                if st.button(
+                                    "🗑️ Excluir parcelas em aberto",
+                                    key=f"del_open_{credit_group}_{pid}"
+                                ):
+                                    repos.delete_credit_group(
+                                        st.session_state.user_id,
+                                        credit_group,
+                                        only_open=True
+                                    )
+                                    st.session_state.msg_ok = "Parcelas em aberto excluídas!"
+                                    st.rerun()
 
-
-                            if st.button("❌ Excluir TODA a compra parcelada", key=f"del_all_{credit_group}_{pid}"):
-                                repos.delete_credit_group(
-                                    st.session_state.user_id,
-                                    credit_group,
-                                    only_open=False
-                                )
-                                st.session_state.msg_ok = "Compra parcelada excluída!"
-                                st.rerun()
-
+                                if st.button(
+                                    "❌ Excluir TODA a compra parcelada",
+                                    key=f"del_all_{credit_group}_{pid}"
+                                ):
+                                    repos.delete_credit_group(
+                                        st.session_state.user_id,
+                                        credit_group,
+                                        only_open=False
+                                    )
+                                    st.session_state.msg_ok = "Compra parcelada excluída!"
+                                    st.rerun()
 
                     if st.session_state.edit_id == pid:
                         with st.form(f"edit_form_{pid}", clear_on_submit=False):
-                            n_desc = st.text_input("Descrição", value=str(desc_r or ""))
-                            n_val = st.number_input("Valor", value=float(amount or 0), step=10.0)
-                            n_venc = st.date_input(
-                                "Vencimento",
-                                value=datetime.fromisoformat(str(due)).date() if due else date.today()
+
+                            n_desc = st.text_input(
+                                "Descrição",
+                                value=str(desc_r or "")
                             )
 
-                            cats2 = repos.list_categories(st.session_state.user_id)
-                            cat_map2 = {rr["name"]: rr["id"] for rr in cats2}
-                            cat_names2 = ["(Sem categoria)"] + list(cat_map2.keys())
-                            current_cat = cat_name_r if cat_name_r in cat_map2 else "(Sem categoria)"
+                            n_val = st.number_input(
+                                "Valor",
+                                value=float(amount or 0),
+                                step=10.0
+                            )
 
+                            n_venc = st.date_input(
+                                "Vencimento",
+                                value=datetime.fromisoformat(
+                                    str(due)
+                                ).date() if due else date.today()
+                            )
+
+                            cats2 = repos.list_categories(
+                                st.session_state.user_id
+                            )
+
+                            cat_map2 = {
+                                rr["name"]: rr["id"]
+                                for rr in cats2
+                            }
+
+                            cat_names2 = [
+                                "(Sem categoria)"
+                            ] + list(cat_map2.keys())
+
+                            current_cat = (
+                                cat_name_r
+                                if cat_name_r in cat_map2
+                                else "(Sem categoria)"
+                            )
 
                             n_cat_name = st.selectbox(
                                 "Categoria",
@@ -511,13 +549,17 @@ def screen_app():
                                 index=cat_names2.index(current_cat)
                             )
 
-                            col1, col2 = st.columns(2)
-                            salvar = col1.form_submit_button("Salvar")
-                            cancelar = col2.form_submit_button("Cancelar")
-
+                            col_a, col_b = st.columns(2)
+                            salvar = col_a.form_submit_button("Salvar")
+                            cancelar = col_b.form_submit_button("Cancelar")
 
                         if salvar:
-                            cid2 = None if n_cat_name == "(Sem categoria)" else cat_map2[n_cat_name]
+                            cid2 = (
+                                None
+                                if n_cat_name == "(Sem categoria)"
+                                else cat_map2[n_cat_name]
+                            )
+
                             repos.update_payment(
                                 st.session_state.user_id,
                                 pid,
@@ -526,10 +568,10 @@ def screen_app():
                                 str(n_venc),
                                 cid2
                             )
+
                             st.session_state.edit_id = None
                             st.session_state.msg_ok = "Despesa atualizada com sucesso!"
                             st.rerun()
-
 
                         if cancelar:
                             st.session_state.edit_id = None
