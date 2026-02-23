@@ -427,35 +427,31 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    st.markdown(f"""
-                    <div class="card-despesa">
+                    st.markdown('<div class="card-despesa">', unsafe_allow_html=True)
 
-                        <div class="card-top">
-                            <div>
-                                <div class="card-titulo">🏷 {desc_r}</div>
-                                <div class="card-categoria">{cat_name_r or ''}</div>
-                            </div>
-                            <div>
-                                {status_html}
-                            </div>
-                        </div>
-
-                        <div class="card-middle">
-                            <div class="card-valor">{fmt_brl(amount)}</div>
-                            <div class="card-data">{format_date_br(due)}</div>
-                        </div>
-
-                        <div class="card-divider"></div>
-
-                        <div class="card-actions">
-                            <div id="btn-pay-{pid}"></div>
-                            <div id="btn-edit-{pid}"></div>
-                            <div id="btn-del-{pid}"></div>
-                        </div>
-
+                    st.markdown(
+                    f"""
+                    <div class="card-top">
+                    <div>
+                    <div class="card-titulo">🏷 {desc_r}</div>
+                    <div class="card-categoria-pill">{cat_name_r}</div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    <div>
+                    {status_html}
+                    </div>
+                    </div>
 
+                    <div class="card-middle">
+                    <div class="card-valor">{fmt_brl(amount)}</div>
+                    <div class="card-data">{format_date_br(due)}</div>
+                    </div>
+
+                    <div class="card-divider"></div>
+                    """.strip(),
+                    unsafe_allow_html=True
+                    )
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
                     # Agora injetamos os botões dentro dos containers HTML
                     with st.container():
                         col1, col2, col3 = st.columns(3)
