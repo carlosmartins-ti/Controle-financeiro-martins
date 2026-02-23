@@ -430,24 +430,28 @@ def screen_app():
 
                     with st.container():
 
-                        st.markdown(f"""<div class="card-despesa">
+                        import streamlit.components.v1 as components
+
+                        card_html = f"""
+                        <div class="card-despesa">
                         <div class="card-top">
-                        <div>
+                            <div>
                             <div class="card-titulo">🏷 {desc_r}</div>
                             <div class="card-categoria">{cat_name_r or ''}</div>
-                        </div>
-                        <div>
-                            {status_html}
-                        </div>
+                            </div>
+                            <div>{status_html}</div>
                         </div>
 
                         <div class="card-middle">
-                        <div class="card-valor">{fmt_brl(amount)}</div>
-                        <div class="card-data">{format_date_br(due)}</div>
+                            <div class="card-valor">{fmt_brl(amount)}</div>
+                            <div class="card-data">{format_date_br(due)}</div>
                         </div>
 
                         <div class="card-divider"></div>
-                        </div>""", unsafe_allow_html=True)
+                        </div>
+                        """
+
+                        components.html(card_html, height=130)
 
                         col1, col2, col3 = st.columns(3)
 
