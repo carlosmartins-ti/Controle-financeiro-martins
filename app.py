@@ -487,15 +487,14 @@ def screen_app():
                               <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
                             <div>{status_html}</div>
-                        </div>
+                           </div>
 
-                        <div class="card-middle">
-                          <div class="card-valor">{fmt_brl(amount)}</div>
-                          <div class="card-data">{format_date_br(due)}</div>
-                         </div>
+                           <div class="card-middle">
+                             <div class="card-valor">{fmt_brl(amount)}</div>
+                             <div class="card-data">{format_date_br(due)}</div>
+                           </div>
                         </div>
                         """
-
                         components.html(card_html, height=150)
 
                         col1, col2, col3 = st.columns(3)
