@@ -427,7 +427,7 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    with st.container():
+             with st.container():
 
                     st.markdown(f"""
                     <div class="card-despesa">
@@ -453,11 +453,10 @@ def screen_app():
 
                     col1, col2, col3 = st.columns(3)
 
-                    if not paid:
-                        if col1.button("↩ Desfazer" if paid else "✔ Pagar", key=f"pay_{pid}"):
-                            repos.mark_paid(st.session_state.user_id, pid, not paid)
-                            st.session_state.msg_ok = "Status atualizado!"
-                            st.rerun()
+                    if col1.button("↩ Desfazer" if paid else "✔ Pagar", key=f"pay_{pid}"):
+                        repos.mark_paid(st.session_state.user_id, pid, not paid)
+                        st.session_state.msg_ok = "Status atualizado!"
+                        st.rerun()
 
                     if col2.button("✏ Editar", key=f"edit_{pid}"):
                         st.session_state.edit_id = pid
