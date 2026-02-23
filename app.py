@@ -1,64 +1,54 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-from datetime import date, datetime
-import streamlit.components.v1 as components
+import streamlit as st import pandas as pd import plotly.express as px
+from datetime import date, datetime import streamlit.components.v1 as
+components
 
-from database import init_db
-from auth import authenticate, create_user, get_security_question, reset_password
-import repos
+from database import init_db from auth import authenticate, create_user,
+get_security_question, reset_password import repos
 
-# ================= SETUP =================
-st.set_page_config(
-    page_title="Controle Financeiro",
-    page_icon="💳",
-    layout="wide"
-)
+================= SETUP =================
 
-with open("style.css", "r", encoding="utf-8") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+st.set_page_config( page_title=“Controle Financeiro”, page_icon=“💳”,
+layout=“wide” )
+
+with open(“style.css”, “r”, encoding=“utf-8”) as f: st.markdown(f”
+“, unsafe_allow_html=True)
 
 init_db()
 
-ADMIN_USERNAME = "carlos.martins"
+ADMIN_USERNAME = “carlos.martins”
 
-MESES = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-]
+MESES = [ “Janeiro”,“Fevereiro”,“Março”,“Abril”,“Maio”,“Junho”,
+“Julho”,“Agosto”,“Setembro”,“Outubro”,“Novembro”,“Dezembro”]
 
-# ================= UTILS =================
-def fmt_brl(v):
-    return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+================= UTILS =================
 
-def format_date_br(s):
-    if not s:
-        return ""
-    try:
-        return datetime.fromisoformat(str(s)).strftime("%d/%m/%Y")
-    except:
-        return str(s)
+def fmt_brl(v): return f”R$
+{float(v):,.2f}“.replace(”,“,”X”).replace(“.”, “,”).replace(“X”, “.”)
 
-def is_admin():
-    return st.session_state.username == ADMIN_USERNAME
+def format_date_br(s): if not s: return “” try: return
+datetime.fromisoformat(str(s)).strftime(“%d/%m/%Y”) except: return
+str(s)
 
-# ================= SESSION =================
-for k in ["user_id", "username", "edit_id", "msg_ok"]:
-    if k not in st.session_state:
-        st.session_state[k] = None
+def is_admin(): return st.session_state.username == ADMIN_USERNAME
 
-# ================= COMPLEMENTO (APENAS ADICIONADO) =================
-# Estado para controlar "voltar ao app" após gerar PDF
-if "pdf_relatorio_path" not in st.session_state:
-    st.session_state.pdf_relatorio_path = None
+================= SESSION =================
 
-if "pdf_relatorio_nome" not in st.session_state:
-    st.session_state.pdf_relatorio_nome = None
+for k in [“user_id”, “username”, “edit_id”, “msg_ok”]: if k not in
+st.session_state: st.session_state[k] = None
 
-# ================= AUTH =================
-def screen_auth():
-    st.title("💳 Controle Financeiro")
+================= COMPLEMENTO (APENAS ADICIONADO) =================
 
+Estado para controlar “voltar ao app” após gerar PDF
+
+if “pdf_relatorio_path” not in st.session_state:
+st.session_state.pdf_relatorio_path = None
+
+if “pdf_relatorio_nome” not in st.session_state:
+st.session_state.pdf_relatorio_nome = None
+
+================= AUTH =================
+
+def screen_auth(): st.title(“💳 Controle Financeiro”)
 
     components.html(
         '''
@@ -141,12 +131,10 @@ def screen_auth():
                 else:
                     st.error("Resposta incorreta.")
 
-# ================= APP =================
-def screen_app():
-    try:
-        if not st.session_state.user_id:
-            st.error("Usuário não autenticado.")
-            return
+================= APP =================
+
+def screen_app(): try: if not st.session_state.user_id:
+st.error(“Usuário não autenticado.”) return
 
         with st.sidebar:
             st.markdown(f"**Usuário:** {st.session_state.username}")
@@ -402,17 +390,18 @@ def screen_app():
             else:
                 for r in rows:
 
-                pid = r.get("id")
-                desc_r = r.get("description")
-                amount = r.get("amount")
-                due = r.get("due_date")
-                paid = r.get("paid")
-                cat_name_r = r.get("category")
+                    pid = r.get("id")
+                    desc_r = r.get("description")
+                    amount = r.get("amount")
+                    due = r.get("due_date")
+                    paid = r.get("paid")
+                    cat_name_r = r.get("category")
 
-                installments = r.get("installments") or 1
-                is_credit = bool(r.get("is_credit"))
+                    installments = r.get("installments") or 1
+                    is_credit = bool(r.get("is_credit"))
+                    credit_group = r.get("credit_group") or r.get("group_id") or r.get("credit_group_id")
 
-                with st.container():
+                    with st.container():
                     st.markdown('<div class="card-despesa">', unsafe_allow_html=True)
 
                     col_top1, col_top2 = st.columns([3,1])
@@ -460,7 +449,8 @@ def screen_app():
                         st.session_state.msg_ok = "Despesa excluída!"
                         st.rerun()
 
-                    st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
+
                     if is_credit and installments > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
                             if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
@@ -572,9 +562,6 @@ def screen_app():
         st.exception(e)
         st.stop()
 
+================= ROUTER =================
 
-# ================= ROUTER =================
-if st.session_state.user_id is None:
-    screen_auth()
-else:
-    screen_app()
+if st.session_state.user_id is None: screen_auth() else: screen_app()
