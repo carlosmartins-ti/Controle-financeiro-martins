@@ -143,3 +143,46 @@
     border-top: 1px solid rgba(255,255,255,0.08);
     padding-top: 16px;
 }
+.card-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: 18px 0;
+}
+
+.card-categoria {
+    display: inline-block;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.card-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.card-actions button {
+    border-radius: 12px !important;
+    padding: 8px 14px !important;
+    font-weight: 500 !important;
+}
+
+.card-actions .btn-green {
+    background: rgba(22,163,74,0.15) !important;
+    color: #22c55e !important;
+    border: 1px solid rgba(34,197,94,0.4) !important;
+}
+
+.card-actions .btn-blue {
+    background: rgba(59,130,246,0.15) !important;
+    color: #60a5fa !important;
+    border: 1px solid rgba(96,165,250,0.4) !important;
+}
+
+.card-actions .btn-red {
+    background: rgba(220,38,38,0.15) !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(248,113,113,0.4) !important;
+}
