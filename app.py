@@ -427,7 +427,7 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    st.markdown(f"""
+                    card_html = f"""
                     <div class="card-despesa">
 
                         <div class="card-top">
@@ -446,39 +446,33 @@ def screen_app():
                         </div>
 
                         <div class="card-divider"></div>
-
-                        <div class="card-actions">
-                            <div id="btn-pay-{pid}"></div>
-                            <div id="btn-edit-{pid}"></div>
-                            <div id="btn-del-{pid}"></div>
-                        </div>
-
                     </div>
-                    """, unsafe_allow_html=True)
+                    """
 
-                    # Agora injetamos os botões dentro dos containers HTML
-                    with st.container():
-                        col1, col2, col3 = st.columns(3)
+                    st.markdown(card_html, unsafe_allow_html=True)
 
-                        if not paid:
-                            if col1.button("✔ Pagar", key=f"pay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, True)
-                                st.session_state.msg_ok = "Despesa marcada como paga!"
-                                st.rerun()
-                        else:
-                            if col1.button("↩ Desfazer", key=f"unpay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, False)
-                                st.session_state.msg_ok = "Pagamento desfeito!"
-                                st.rerun()
+                    # 👇 AGORA OS BOTÕES VISUALMENTE COLADOS NO CARD
+                    btn1, btn2, btn3 = st.columns([1,1,1])
 
-                        if col2.button("✏ Editar", key=f"edit_{pid}"):
-                            st.session_state.edit_id = pid
+                    if not paid:
+                        if btn1.button("✔ Pagar", key=f"pay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, True)
+                            st.session_state.msg_ok = "Despesa marcada como paga!"
+                            st.rerun()
+                    else:
+                        if btn1.button("↩ Desfazer", key=f"unpay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, False)
+                            st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
-                        if col3.button("🗑 Excluir", key=f"del_{pid}"):
-                            repos.delete_payment(st.session_state.user_id, pid)
-                            st.session_state.msg_ok = "Despesa excluída!"
-                            st.rerun()
+                    if btn2.button("✏ Editar", key=f"edit_{pid}"):
+                        st.session_state.edit_id = pid
+                        st.rerun()
+
+                    if btn3.button("🗑 Excluir", key=f"del_{pid}"):
+                        repos.delete_payment(st.session_state.user_id, pid)
+                        st.session_state.msg_ok = "Despesa excluída!"
+                        st.rerun()
 
                     st.markdown("<br>", unsafe_allow_html=True)
                     if is_credit and installments > 1 and credit_group:
