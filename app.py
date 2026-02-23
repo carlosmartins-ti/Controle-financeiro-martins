@@ -419,13 +419,13 @@ def screen_app():
                         else '<span class="badge-aberto">⚠ Em aberto</span>'
                     )
 
-                    card_html = f"""
+                    st.markdown(f"""
                     <div class="card-despesa">
 
                         <div class="card-top">
                             <div>
                                 <div class="card-titulo">{desc_r}</div>
-                                <div class="card-categoria-pill">{cat_name_r or ''}</div>
+                                <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
                             <div>
                                 {status_html}
@@ -440,29 +440,9 @@ def screen_app():
                         <div class="card-divider"></div>
 
                     </div>
-                    """
-
-                    st.markdown('<div class="card-actions">', unsafe_allow_html=True)
-                    import streamlit as st
-
-                    is_mobile = st.session_state.get("is_mobile", False)
-
-                    # Detecta largura da tela
-                    st.markdown("""
-                    <script>
-                    const width = window.innerWidth;
-                    if (width < 768) {
-                        window.parent.postMessage({type: "streamlit:setSessionState", key: "is_mobile", value: true}, "*");
-                    }
-                    </script>
                     """, unsafe_allow_html=True)
 
-                    if st.session_state.get("is_mobile"):
-                        col1 = st.container()
-                        col2 = st.container()
-                        col3 = st.container()
-                    else:
-                        col1, col2, col3 = st.columns([1,1,1], gap="small")
+                    col1, col2, col3 = st.columns(3)
 
                     if not paid:
                         if col1.button("✔ Pagar", key=f"pay_{pid}"):
