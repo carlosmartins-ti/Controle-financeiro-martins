@@ -402,81 +402,65 @@ def screen_app():
             else:
                 for r in rows:
 
-                    pid = r.get("id")
-                    desc_r = r.get("description")
-                    amount = r.get("amount")
-                    due = r.get("due_date")
-                    paid = r.get("paid")
-                    cat_name_r = r.get("category")
-                    
-                     # ===== FIX: garante que essas variáveis existam sempre =====
-                    installments = r.get("installments") or r.get("parcelas") or 1
-                    try:
-                        installments = int(installments)
-                    except Exception:
-                        installments = 1
+                pid = r.get("id")
+                desc_r = r.get("description")
+                amount = r.get("amount")
+                due = r.get("due_date")
+                paid = r.get("paid")
+                cat_name_r = r.get("category")
 
-                    is_credit = bool(r.get("is_credit"))  # vem do banco (True/False)
+                installments = r.get("installments") or 1
+                is_credit = bool(r.get("is_credit"))
 
-                    # grupo da compra parcelada (se existir no seu banco)
-                    credit_group = r.get("credit_group") or r.get("group_id") or r.get("credit_group_id")
-
-                    status_html = (
-                        '<span class="badge-pago">✔ Pago</span>'
-                        if paid
-                        else '<span class="badge-aberto">⚠ Em aberto</span>'
-                    )
-
+                with st.container():
                     st.markdown('<div class="card-despesa">', unsafe_allow_html=True)
 
-                    st.markdown(
-                    f"""
-                    <div class="card-top">
-                    <div>
-                    <div class="card-titulo">🏷 {desc_r}</div>
-                    <div class="card-categoria-pill">{cat_name_r}</div>
-                    </div>
-                    <div>
-                    {status_html}
-                    </div>
-                    </div>
+                    col_top1, col_top2 = st.columns([3,1])
 
-                    <div class="card-middle">
-                    <div class="card-valor">{fmt_brl(amount)}</div>
-                    <div class="card-data">{format_date_br(due)}</div>
-                    </div>
+                    with col_top1:
+                        st.markdown(f"""
+                            <div class="card-titulo">🏷 {desc_r}</div>
+                            <div class="card-categoria-pill">{cat_name_r}</div>
+                        """, unsafe_allow_html=True)
 
-                    <div class="card-divider"></div>
-                    """.strip(),
-                    unsafe_allow_html=True
-                    )
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    # Agora injetamos os botões dentro dos containers HTML
-                    with st.container():
-                        col1, col2, col3 = st.columns(3)
-
-                        if not paid:
-                            if col1.button("✔ Pagar", key=f"pay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, True)
-                                st.session_state.msg_ok = "Despesa marcada como paga!"
-                                st.rerun()
+                    with col_top2:
+                        if paid:
+                            st.markdown('<div class="badge-pago">✔ Pago</div>', unsafe_allow_html=True)
                         else:
-                            if col1.button("↩ Desfazer", key=f"unpay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, False)
-                                st.session_state.msg_ok = "Pagamento desfeito!"
-                                st.rerun()
+                            st.markdown('<div class="badge-aberto">⚠ Em aberto</div>', unsafe_allow_html=True)
 
-                        if col2.button("✏ Editar", key=f"edit_{pid}"):
-                            st.session_state.edit_id = pid
+                    st.markdown(f"""
+                        <div class="card-middle">
+                            <div class="card-valor">{fmt_brl(amount)}</div>
+                            <div class="card-data">{format_date_br(due)}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    st.markdown('<div class="card-divider"></div>', unsafe_allow_html=True)
+
+                    col1, col2, col3 = st.columns(3)
+
+                    if not paid:
+                        if col1.button("✔ Pagar", key=f"pay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, True)
+                            st.session_state.msg_ok = "Despesa marcada como paga!"
+                            st.rerun()
+                    else:
+                        if col1.button("↩ Desfazer", key=f"unpay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, False)
+                            st.session_state.msg_ok = "Pagamento desfeito!"
                             st.rerun()
 
-                        if col3.button("🗑 Excluir", key=f"del_{pid}"):
-                            repos.delete_payment(st.session_state.user_id, pid)
-                            st.session_state.msg_ok = "Despesa excluída!"
-                            st.rerun()
+                    if col2.button("✏ Editar", key=f"edit_{pid}"):
+                        st.session_state.edit_id = pid
+                        st.rerun()
 
-                    st.markdown("<br>", unsafe_allow_html=True)
+                    if col3.button("🗑 Excluir", key=f"del_{pid}"):
+                        repos.delete_payment(st.session_state.user_id, pid)
+                        st.session_state.msg_ok = "Despesa excluída!"
+                        st.rerun()
+
+                    st.markdown("</div>", unsafe_allow_html=True)
                     if is_credit and installments > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
                             if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
