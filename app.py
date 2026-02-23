@@ -408,6 +408,18 @@ def screen_app():
                     due = r.get("due_date")
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
+                    
+                     # ===== FIX: garante que essas variáveis existam sempre =====
+                    installments = r.get("installments") or r.get("parcelas") or 1
+                    try:
+                        installments = int(installments)
+                    except Exception:
+                        installments = 1
+
+                    is_credit = bool(r.get("is_credit"))  # vem do banco (True/False)
+
+                    # grupo da compra parcelada (se existir no seu banco)
+                    credit_group = r.get("credit_group") or r.get("group_id") or r.get("credit_group_id")
 
                     status_html = (
                         '<span class="badge-pago">✔ Pago</span>'
@@ -469,7 +481,7 @@ def screen_app():
                             st.rerun()
 
                     st.markdown("<br>", unsafe_allow_html=True)
-                    if is_credit and int(installments) > 1 and credit_group:
+                    if is_credit and installments > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
                             if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
                                 repos.delete_credit_group(
