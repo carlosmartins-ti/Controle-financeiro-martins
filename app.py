@@ -433,25 +433,70 @@ def screen_app():
                         import streamlit.components.v1 as components
 
                         card_html = f"""
+                        <style>
+                        .card-despesa {{
+                        background: linear-gradient(135deg, #1f2937, #111827);
+                        border-radius: 16px;
+                        padding: 18px;
+                        margin-bottom: 10px;
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+                        color: #e5e7eb;
+                        font-family: system-ui;
+                        }}
+
+                        .card-top {{
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        }}
+
+                        .card-middle {{
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 10px;
+                        }}
+
+                        .card-valor {{
+                        font-size: 18px;
+                        font-weight: bold;
+                        }}
+
+                        .card-data {{
+                        opacity: 0.7;
+                        }}
+
+                        .badge-pago {{
+                        background: #16a34a;
+                        padding: 4px 10px;
+                        border-radius: 8px;
+                        font-size: 12px;
+                        }}
+
+                        .badge-aberto {{
+                        background: #b91c1c;
+                        padding: 4px 10px;
+                        border-radius: 8px;
+                        font-size: 12px;
+                        }}
+                        </style>
+
                         <div class="card-despesa">
-                        <div class="card-top">
+                          <div class="card-top">
                             <div>
-                            <div class="card-titulo">🏷 {desc_r}</div>
-                            <div class="card-categoria">{cat_name_r or ''}</div>
+                              <div class="card-titulo">🏷 {desc_r}</div>
+                              <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
                             <div>{status_html}</div>
                         </div>
 
                         <div class="card-middle">
-                            <div class="card-valor">{fmt_brl(amount)}</div>
-                            <div class="card-data">{format_date_br(due)}</div>
-                        </div>
-
-                        <div class="card-divider"></div>
+                          <div class="card-valor">{fmt_brl(amount)}</div>
+                          <div class="card-data">{format_date_br(due)}</div>
+                         </div>
                         </div>
                         """
 
-                        components.html(card_html, height=130)
+                        components.html(card_html, height=150)
 
                         col1, col2, col3 = st.columns(3)
 
