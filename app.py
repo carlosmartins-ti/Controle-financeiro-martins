@@ -409,10 +409,6 @@ def screen_app():
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
 
-                    is_credit = r.get("is_credit")
-                    installments = r.get("installments") or 1
-                    credit_group = r.get("credit_group")
-
                     status_html = (
                         '<span class="badge-pago">✔ Pago</span>'
                         if paid
@@ -424,7 +420,7 @@ def screen_app():
 
                         <div class="card-top">
                             <div>
-                                <div class="card-titulo">{desc_r}</div>
+                                <div class="card-titulo">🏷 {desc_r}</div>
                                 <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
                             <div>
@@ -442,17 +438,13 @@ def screen_app():
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # BOTÕES DENTRO DO CARD (estilizados via CSS)
                     col1, col2, col3 = st.columns(3)
 
                     if not paid:
-                        if col1.button("✔ Pagar", key=f"pay_{pid}"):
-                            repos.mark_paid(st.session_state.user_id, pid, True)
-                            st.session_state.msg_ok = "Despesa marcada como paga!"
-                            st.rerun()
-                    else:
-                        if col1.button("↩ Desfazer", key=f"unpay_{pid}"):
-                            repos.mark_paid(st.session_state.user_id, pid, False)
-                            st.session_state.msg_ok = "Pagamento desfeito!"
+                        if col1.button("✔ Desfazer" if paid else "✔ Pagar", key=f"pay_{pid}"):
+                            repos.mark_paid(st.session_state.user_id, pid, not paid)
+                            st.session_state.msg_ok = "Status atualizado!"
                             st.rerun()
 
                     if col2.button("✏ Editar", key=f"edit_{pid}"):
