@@ -195,3 +195,8 @@ div[data-testid="column"]:nth-child(3) button {
     margin-top: -55px;
     padding: 0 22px 20px 22px;
 }
+/* Faz os botões parecerem dentro do card */
+.card-despesa + div[data-testid="stHorizontalBlock"] {
+    margin-top: -60px;
+    padding: 0 22px 22px 22px;
+}
