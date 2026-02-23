@@ -78,67 +78,65 @@
   color: #4f8bf9;
   text-decoration: none;
 }
-
 /* =========================================================
-   CARD DE DESPESA (VERSÃO FINAL PREMIUM)
+   CARD DE DESPESA (VERSÃO FINAL LIMPA)
 ========================================================= */
 
 .card-despesa {
-    background: linear-gradient(135deg, #0b1220, #172033);
-    border-radius: 18px;
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border-radius: 16px;
     padding: 22px;
-    margin-bottom: 22px;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.45);
+    margin-bottom: 18px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
     border: 1px solid rgba(255,255,255,0.05);
-    color: #f1f5f9;
     transition: all 0.2s ease;
 }
 
 .card-despesa:hover {
     transform: translateY(-2px);
-    box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
 }
 
 .card-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .card-titulo {
     font-size: 20px;
     font-weight: 600;
-    margin-bottom: 6px;
+    color: #f1f5f9;
 }
 
-.card-categoria {
+.card-categoria-pill {
     display: inline-block;
-    font-size: 13px;
-    padding: 6px 12px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
+    margin-top: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    background: #334155;
+    border-radius: 20px;
+    color: #cbd5e1;
 }
 
 .card-middle {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 10px;
+    margin-top: 16px;
 }
 
 .card-valor {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
+    color: #e2e8f0;
 }
 
 .card-data {
     font-size: 14px;
-    opacity: 0.7;
+    color: #94a3b8;
 }
-
-/* Linha divisória */
 
 .card-divider {
     height: 1px;
@@ -152,6 +150,7 @@
 
 .badge-pago {
     background: #16a34a;
+    color: white;
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
@@ -160,6 +159,7 @@
 
 .badge-aberto {
     background: #dc2626;
+    color: white;
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
@@ -167,10 +167,15 @@
 }
 
 /* =========================================================
-   BOTÕES DO CARD
+   BOTÕES DENTRO DO CARD
 ========================================================= */
 
-div[data-testid="column"] button {
+.card-despesa + div[data-testid="stHorizontalBlock"] {
+    margin-top: -60px;
+    padding: 0 22px 22px 22px;
+}
+
+.card-despesa + div[data-testid="stHorizontalBlock"] button {
     border-radius: 14px !important;
     padding: 10px 14px !important;
     font-weight: 500 !important;
@@ -180,23 +185,14 @@ div[data-testid="column"] button {
     transition: all 0.2s ease;
 }
 
-div[data-testid="column"] button:hover {
+.card-despesa + div[data-testid="stHorizontalBlock"] button:hover {
     background: rgba(255,255,255,0.12) !important;
     transform: translateY(-1px);
 }
 
-/* Botão excluir com destaque */
+/* Excluir vermelho */
 
-div[data-testid="column"]:nth-child(3) button {
+.card-despesa + div[data-testid="stHorizontalBlock"] div:nth-child(3) button {
     border: 1px solid rgba(220,38,38,0.5) !important;
     background: rgba(220,38,38,0.12) !important;
-}
-.card-despesa + div[data-testid="stHorizontalBlock"] {
-    margin-top: -55px;
-    padding: 0 22px 20px 22px;
-}
-/* Faz os botões parecerem dentro do card */
-.card-despesa + div[data-testid="stHorizontalBlock"] {
-    margin-top: -60px;
-    padding: 0 22px 22px 22px;
 }
