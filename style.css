@@ -279,3 +279,8 @@ div[data-testid="column"]:nth-child(3) button {
     border: 1px solid rgba(220,38,38,0.4) !important;
     background: rgba(220,38,38,0.1) !important;
 }
+@media (max-width: 768px) {
+    div[data-testid="column"] {
+        min-width: 0px !important;
+    }
+}
