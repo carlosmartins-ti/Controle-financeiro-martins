@@ -432,9 +432,9 @@ def screen_app():
 
                         import streamlit.components.v1 as components
 
-                        card_html = f"""
+                        components.html("""
                         <style>
-                        .card-despesa {{
+                        .card-despesa {
                         background: linear-gradient(135deg, #1f2937, #111827);
                         border-radius: 16px;
                         padding: 18px;
@@ -442,44 +442,36 @@ def screen_app():
                         box-shadow: 0 8px 24px rgba(0,0,0,0.4);
                         color: #e5e7eb;
                         font-family: system-ui;
-                        }}
-
-                        .card-top {{
+                        }
+                        .card-top {
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
-                        }}
-
-                        .card-middle {{
+                        }
+                        .card-middle {
                         display: flex;
                         justify-content: space-between;
                         margin-top: 10px;
-                        }}
-
-                        .card-valor {{
-                        font-size: 18px;
-                        font-weight: bold;
-                        }}
-
-                        .card-data {{
-                        opacity: 0.7;
-                        }}
-
-                        .badge-pago {{
+                        }
+                        .card-valor { font-size: 18px; font-weight: bold; }
+                        .card-data { opacity: 0.7; }
+                        .badge-pago {
                         background: #16a34a;
                         padding: 4px 10px;
                         border-radius: 8px;
                         font-size: 12px;
-                        }}
-
-                        .badge-aberto {{
+                        }
+                        .badge-aberto {
                         background: #b91c1c;
                         padding: 4px 10px;
                         border-radius: 8px;
                         font-size: 12px;
-                        }}
+                        }
                         </style>
+                        """, height=0)
 
+                    with st.container():
+                        card_html = f"""
                         <div class="card-despesa">
                           <div class="card-top">
                             <div>
@@ -487,14 +479,15 @@ def screen_app():
                               <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
                             <div>{status_html}</div>
-                           </div>
+                          </div>
 
-                           <div class="card-middle">
-                             <div class="card-valor">{fmt_brl(amount)}</div>
-                             <div class="card-data">{format_date_br(due)}</div>
-                           </div>
+                          <div class="card-middle">
+                            <div class="card-valor">{fmt_brl(amount)}</div>
+                            <div class="card-data">{format_date_br(due)}</div>
+                          </div>
                         </div>
                         """
+
                         components.html(card_html, height=150)
 
                         col1, col2, col3 = st.columns(3)
