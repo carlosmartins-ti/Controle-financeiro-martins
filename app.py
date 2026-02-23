@@ -425,7 +425,7 @@ def screen_app():
                         <div class="card-top">
                             <div>
                                 <div class="card-titulo">{desc_r}</div>
-                                <div class="card-categoria">{cat_name_r or ''}</div>
+                                <div class="card-categoria-pill">{cat_name_r or ''}</div>
                             </div>
                             <div>
                                 {status_html}
@@ -436,6 +436,8 @@ def screen_app():
                             <div class="card-valor">{fmt_brl(amount)}</div>
                             <div class="card-data">{format_date_br(due)}</div>
                         </div>
+
+                        <div class="card-divider"></div>
 
                     </div>
                     """
