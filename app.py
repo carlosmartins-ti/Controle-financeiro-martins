@@ -424,8 +424,8 @@ def screen_app():
 
                         <div class="card-top">
                             <div>
-                                <div class="card-titulo">🏷 {desc_r}</div>
-                                <div class="card-categoria">🏷 {cat_name_r or ''}</div>
+                                <div class="card-titulo">{desc_r}</div>
+                                <div class="card-categoria">{cat_name_r or ''}</div>
                             </div>
                             <div>
                                 {status_html}
@@ -437,13 +437,10 @@ def screen_app():
                             <div class="card-data">{format_date_br(due)}</div>
                         </div>
 
-                        <div class="card-divider"></div>
-
                     </div>
                     """
 
-                    st.markdown(card_html, unsafe_allow_html=True)
-
+                    st.markdown('<div class="card-actions">', unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
 
                     if not paid:
