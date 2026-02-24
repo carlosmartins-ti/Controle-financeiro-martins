@@ -201,42 +201,30 @@ div[data-testid="stVerticalBlockBorderWrapper"] button {
 div[data-testid="stVerticalBlockBorderWrapper"] button:hover {
     background: rgba(255,255,255,0.12) !important;
 }
-/* ===================== AJUSTE FINO MOBILE CARD ===================== */
+/* ===================== MOBILE REAL STREAMLIT ===================== */
 
-@media (max-width: 768px) {
+/* Quando sidebar estiver recolhida (modo mobile) */
+section[data-testid="stSidebar"][aria-expanded="false"] ~ div 
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    padding: 14px !important;
+    border-radius: 18px !important;
+}
 
-  /* Card mais compacto */
-  div[data-testid="stVerticalBlockBorderWrapper"] {
-      padding: 14px !important;
-      border-radius: 18px !important;
-  }
+/* Título do card menor */
+div[data-testid="stVerticalBlockBorderWrapper"] h3 {
+    font-size: 1.2rem !important;
+    margin-bottom: 6px !important;
+}
 
-  /* Título menor */
-  h3 {
-      font-size: 1.2rem !important;
-      margin-bottom: 6px !important;
-  }
+/* Valor mais compacto */
+div[data-testid="stVerticalBlockBorderWrapper"] h2,
+div[data-testid="stVerticalBlockBorderWrapper"] h1 {
+    font-size: 1.5rem !important;
+    margin-top: 6px !important;
+}
 
-  /* Valor menor */
-  h2, h1 {
-      font-size: 1.6rem !important;
-      margin-top: 8px !important;
-  }
-
-  /* Status menor */
-  strong {
-      font-size: 0.9rem !important;
-  }
-
-  /* Botões menores e alinhados */
-  div[data-testid="stVerticalBlockBorderWrapper"] button {
-      padding: 8px 10px !important;
-      font-size: 0.85rem !important;
-  }
-
-  /* Colunas ficarem mais próximas */
-  div[data-testid="stHorizontalBlock"] {
-      gap: 8px !important;
-  }
-
+/* Botões mais compactos */
+div[data-testid="stVerticalBlockBorderWrapper"] button {
+    padding: 8px 10px !important;
+    font-size: 0.85rem !important;
 }
