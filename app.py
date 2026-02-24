@@ -442,13 +442,9 @@ def screen_app():
                         </div>
                         """, unsafe_allow_html=True)
 
-                        st.markdown(f"""
-                        <div style="
-                            display:flex;
-                            justify-content:space-between;
-                            align-items:center;
-                            margin-top:10px;
-                        ">
+                        st.markdown(
+                        f"""
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
                             <div style="font-size:22px;font-weight:700;">
                                 {fmt_brl(amount)}
                             </div>
@@ -456,7 +452,9 @@ def screen_app():
                                 {format_date_br(due)}
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)    
+                        """,
+                        unsafe_allow_html=True
+                        )   
                                
 
                         col_btn1, col_btn2, col_btn3 = st.columns(3)
