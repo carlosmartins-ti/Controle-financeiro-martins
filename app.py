@@ -412,15 +412,19 @@ def screen_app():
                     installments = r.get("installments") or 1
                     credit_group = r.get("credit_group")
                     
+                    status_color = "#16a34a" if paid else "#dc2626"
+                    status_text = "✅ Pago" if paid else "🕓 Em aberto"
+                    
                     with st.container(border=True):
+                        
                         st.markdown(
                             f'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'
                             f'<div>'
                             f'<div style="font-size:18px;font-weight:600;">🧾 {desc_r}</div>'
                             f'<div style="opacity:0.7;font-size:13px;">🏷️ {cat_name_r if cat_name_r else ""}</div>'
                             f'</div>'
-                            f'<div style="background:{ "#16a34a" if paid else "#dc2626" };padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;">'
-                            f'{"✅ Pago" if paid else "🕓 Em aberto"}'
+                            f'<div style="background:{status_color};padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;">'
+                            f'{status_text}'
                             f'</div>'
                             f'</div>',
                             unsafe_allow_html=True
