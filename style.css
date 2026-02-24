@@ -164,3 +164,40 @@ div[data-testid="column"]:nth-child(3) button {
     border: 1px solid rgba(220,38,38,0.4) !important;
     background: rgba(220,38,38,0.1) !important;
 }
+/* ===================== CARD NATIVO STREAMLIT ===================== */
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 20px !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    background: linear-gradient(135deg, #0b1220, #172033) !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4) !important;
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Badge estilo texto (sem div manual) */
+
+.status-pago {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.status-aberto {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Botões dentro do card */
+
+div[data-testid="stVerticalBlockBorderWrapper"] button {
+    border-radius: 14px !important;
+    padding: 10px 14px !important;
+    font-weight: 500 !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.05) !important;
+    color: #f1f5f9 !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"] button:hover {
+    background: rgba(255,255,255,0.12) !important;
+}
