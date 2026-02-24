@@ -401,7 +401,6 @@ def screen_app():
                 st.info("Nenhuma despesa cadastrada.")
             else:
                 for r in rows:
-
                     pid = r.get("id")
                     desc_r = r.get("description")
                     amount = r.get("amount")
@@ -409,41 +408,47 @@ def screen_app():
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
 
-
                     is_credit = r.get("is_credit")
                     installments = r.get("installments") or 1
                     credit_group = r.get("credit_group")
 
+                    with st.container(border=True):
 
-                    a, b, c, d, e, f = st.columns([4, 1.2, 1.8, 1.2, 1.2, 1])
+                        top1, top2 = st.columns([4, 1.5])
 
-                    a.write(f"**{desc_r}**" + (f"  \n🏷️ {cat_name_r}" if cat_name_r else ""))
-                    b.write(fmt_brl(amount))
-                    c.write(format_date_br(due))
-                    d.write("✅ Paga" if paid else "🕓 Em aberto")
+                        with top1:
+                            st.markdown(f"### 🧾 {desc_r}")
+                            if cat_name_r:
+                                st.caption(f"🏷️ {cat_name_r}")
 
+                        with top2:
+                            status_text = "✅ Paga" if paid else "🕓 Em aberto"
+                            st.markdown(f"**{status_text}**")
+                            st.caption(format_date_br(due))
 
-                    if not paid:
-                        if e.button("Marcar como paga", key=f"pay_{pid}"):
-                            repos.mark_paid(st.session_state.user_id, pid, True)
-                            st.session_state.msg_ok = "Despesa marcada como paga!"
+                        st.markdown(f"## {fmt_brl(amount)}")
+
+                        col_btn1, col_btn2, col_btn3 = st.columns(3)
+
+                        if not paid:
+                            if col_btn1.button("Marcar como paga", key=f"pay_{pid}"):
+                                repos.mark_paid(st.session_state.user_id, pid, True)
+                                st.session_state.msg_ok = "Despesa marcada como paga!"
+                                st.rerun()
+                        else:
+                            if col_btn1.button("Desfazer", key=f"unpay_{pid}"):
+                                repos.mark_paid(st.session_state.user_id, pid, False)
+                                st.session_state.msg_ok = "Pagamento desfeito!"
+                                st.rerun()
+
+                        if col_btn2.button("✏️ Editar", key=f"edit_{pid}"):
+                            st.session_state.edit_id = pid
                             st.rerun()
-                    else:
-                        if e.button("Desfazer", key=f"unpay_{pid}"):
-                            repos.mark_paid(st.session_state.user_id, pid, False)
-                            st.session_state.msg_ok = "Pagamento desfeito!"
+
+                        if col_btn3.button("🗑️ Excluir", key=f"del_{pid}"):
+                            repos.delete_payment(st.session_state.user_id, pid)
+                            st.session_state.msg_ok = "Despesa excluída!"
                             st.rerun()
-
-
-                    if f.button("✏️ Editar", key=f"edit_{pid}"):
-                        st.session_state.edit_id = pid
-                        st.rerun()
-
-                    if f.button("Excluir", key=f"del_{pid}"):
-                        repos.delete_payment(st.session_state.user_id, pid)
-                        st.session_state.msg_ok = "Despesa excluída!"
-                        st.rerun()
-
 
                     if is_credit and int(installments) > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
