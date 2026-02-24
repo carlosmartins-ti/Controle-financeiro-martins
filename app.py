@@ -412,52 +412,30 @@ def screen_app():
                     installments = r.get("installments") or 1
                     credit_group = r.get("credit_group")
                     
-                    with st.container(border=True): 
-                        st.markdown(f"""
-                        <div style="
-                            display:flex;
-                            justify-content:space-between;
-                            align-items:center;
-                            gap:10px;
-                        ">
-                            <div>
-                                <div style="font-size:18px;font-weight:600;">
-                                    🧾 {desc_r}
-                                </div>
-                                <div style="opacity:0.7;font-size:13px;">
-                                    🏷️ {cat_name_r if cat_name_r else ""}
-                                </div>
-                            </div>
-
-                            <div style="
-                                background: {"#16a34a" if paid else "#dc2626"};
-                                padding:6px 14px;
-                                border-radius:20px;
-                                font-size:13px;
-                                font-weight:500;
-                                white-space:nowrap;
-                            ">
-                                {"✅ Pago" if paid else "🕓 Em aberto"}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    with st.container(border=True):
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+                            f'<div>'
+                            f'<div style="font-size:18px;font-weight:600;">🧾 {desc_r}</div>'
+                            f'<div style="opacity:0.7;font-size:13px;">🏷️ {cat_name_r if cat_name_r else ""}</div>'
+                            f'</div>'
+                            f'<div style="background:{ "#16a34a" if paid else "#dc2626" };padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;">'
+                            f'{"✅ Pago" if paid else "🕓 Em aberto"}'
+                            f'</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
 
                         st.markdown(
-                        f"""
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-                            <div style="font-size:22px;font-weight:700;">
-                                {fmt_brl(amount)}
-                            </div>
-                            <div style="opacity:0.7;font-size:14px;">
-                                {format_date_br(due)}
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                        )   
-                               
+                            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">'
+                            f'<div style="font-size:22px;font-weight:700;">{fmt_brl(amount)}</div>'
+                            f'<div style="opacity:0.7;font-size:14px;">{format_date_br(due)}</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
 
                         col_btn1, col_btn2, col_btn3 = st.columns(3)
+                        
 
                         if not paid:
                             if col_btn1.button("Marcar como paga", key=f"pay_{pid}"):
