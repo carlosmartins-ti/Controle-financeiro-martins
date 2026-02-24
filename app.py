@@ -411,22 +411,53 @@ def screen_app():
                     is_credit = r.get("is_credit")
                     installments = r.get("installments") or 1
                     credit_group = r.get("credit_group")
+                    
+                    with st.container(border=True): 
+                        st.markdown(f"""
+                        <div style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:center;
+                            gap:10px;
+                        ">
+                            <div>
+                                <div style="font-size:18px;font-weight:600;">
+                                    🧾 {desc_r}
+                                </div>
+                                <div style="opacity:0.7;font-size:13px;">
+                                    🏷️ {cat_name_r if cat_name_r else ""}
+                                </div>
+                            </div>
 
-                    with st.container(border=True):
+                            <div style="
+                                background: {"#16a34a" if paid else "#dc2626"};
+                                padding:6px 14px;
+                                border-radius:20px;
+                                font-size:13px;
+                                font-weight:500;
+                                white-space:nowrap;
+                            ">
+                                {"✅ Pago" if paid else "🕓 Em aberto"}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                        top1, top2 = st.columns([4, 1.5])
-
-                        with top1:
-                            st.markdown(f"### 🧾 {desc_r}")
-                            if cat_name_r:
-                                st.caption(f"🏷️ {cat_name_r}")
-
-                        with top2:
-                            status_text = "✅ Paga" if paid else "🕓 Em aberto"
-                            st.markdown(f"**{status_text}**")
-                            st.caption(format_date_br(due))
-
-                        st.markdown(f"## {fmt_brl(amount)}")
+                        st.markdown(f"""
+                        <div style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:center;
+                            margin-top:10px;
+                        ">
+                            <div style="font-size:22px;font-weight:700;">
+                                {fmt_brl(amount)}
+                            </div>
+                            <div style="opacity:0.7;font-size:14px;">
+                                {format_date_br(due)}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)    
+                               
 
                         col_btn1, col_btn2, col_btn3 = st.columns(3)
 
