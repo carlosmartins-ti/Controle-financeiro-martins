@@ -417,6 +417,7 @@ def screen_app():
                     desc_r = r.get("description")
                     amount = r.get("amount")
                     due = r.get("due_date")
+                    purchase = r.get("purchase_date")
                     paid = r.get("paid")
                     cat_name_r = r.get("category")
 
@@ -499,6 +500,10 @@ def screen_app():
                         with st.form(f"edit_form_{pid}", clear_on_submit=False):
                             n_desc = st.text_input("Descrição", value=str(desc_r or ""))
                             n_val = st.number_input("Valor", value=float(amount or 0), step=10.0)
+                            n_compra = st.date_input(
+                                "Data da compra",
+                                value=datetime.fromisoformat(str(purchase)).date() if purchase else date.today()
+                            )
                             n_venc = st.date_input(
                                 "Vencimento",
                                 value=datetime.fromisoformat(str(due)).date() if due else date.today()
@@ -528,6 +533,7 @@ def screen_app():
                                 pid,
                                 n_desc.strip(),
                                 float(n_val),
+                                str(n_compra),
                                 str(n_venc),
                                 cid2
                             )
