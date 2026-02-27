@@ -234,18 +234,21 @@ def mark_paid(user_id, payment_id, paid):
     conn.close()
 
 
-def update_payment(user_id, payment_id, description, amount, due_date, category_id):
+def update_payment(user_id, payment_id, description, amount, purchase_date, due_date, category_id):
     conn = get_connection()
     cur = conn.cursor()
+
+    purchase_dt = datetime.fromisoformat(str(purchase_date)).date() if purchase_date else None
 
     cur.execute(
         """UPDATE payments
               SET description = %s,
                   amount = %s,
+                  purchase_date = %s,
                   due_date = %s,
                   category_id = %s
             WHERE id = %s AND user_id = %s""",
-        (description, amount, due_date, category_id, payment_id, user_id)
+        (description, amount, purchase_dt, due_date, category_id, payment_id, user_id)
     )
 
     conn.commit()
