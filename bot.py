@@ -16,7 +16,8 @@ from database import get_connection
 
 
 # ================= CONFIG =================
-TOKEN = "COLOQUE_SEU_TOKEN_AQUI"
+import os
+TOKEN = os.getenv("BOT_TOKEN")
 
 
 # ================= STATES =================
