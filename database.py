@@ -32,6 +32,23 @@ def init_db():
         created_at TIMESTAMP NOT NULL
     )
     """)
+    # ---------- USERS ----------
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        security_question TEXT NOT NULL,
+        security_answer_hash TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL
+    )
+    """)
+
+    # 🔥 NOVO: telegram_id
+    cur.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS telegram_id BIGINT
+    """)
 
     # ---------- CATEGORIES ----------
     cur.execute("""
