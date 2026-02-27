@@ -116,6 +116,7 @@ def add_payment(
     user_id,
     description,
     amount,
+    purchase_date,   # 👈 NOVO
     due_date,
     month,
     year,
@@ -161,6 +162,7 @@ def add_payment(
                 description,
                 category_id,
                 amount,
+                purchase_date,
                 due_date,
                 month,
                 year,
@@ -178,6 +180,7 @@ def add_payment(
                 f"{description} ({i+1}/{installments})" if installments > 1 else description,
                 category_id,
                 parcel_value,
+                purchase_date,
                 parcel_due.date(),
                 parcel_month,
                 parcel_year,
