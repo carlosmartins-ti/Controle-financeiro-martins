@@ -85,10 +85,16 @@ def init_db():
     )
     """)
 
-    # ✅ NOVO: garante a coluna em banco existente
+    ## ✅ NOVO: garante coluna telegram_id em users
     cur.execute("""
-    ALTER TABLE payments
-    ADD COLUMN IF NOT EXISTS purchase_date DATE
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS telegram_id BIGINT
+    """)
+
+    # ✅ NOVO: garante índice único
+    cur.execute("""
+    CREATE UNIQUE INDEX IF NOT EXISTS users_telegram_id_uq
+    ON users (telegram_id)
     """)
 
     # ---------- BUDGETS ----------
