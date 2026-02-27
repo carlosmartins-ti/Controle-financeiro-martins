@@ -1,13 +1,17 @@
 import os
 import re
-import traceback
 from datetime import datetime
-from telegram import Update
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
     ConversationHandler,
+    CallbackQueryHandler,
     ContextTypes,
     filters,
 )
@@ -16,17 +20,17 @@ import repos
 from auth import authenticate
 from database import get_connection
 
-# ================= CONFIG =================
-TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_TOKEN")
+
+TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
-    raise RuntimeError("Defina BOT_TOKEN no Railway > Variables")
+    raise RuntimeError("Defina BOT_TOKEN no Railway.")
+
 
 LOGIN_USER, LOGIN_PASS = range(2)
-DESC, VALOR, COMPRA, VENC = range(10, 14)
+EDIT_VALUE = 10
 
-# ================= UTIL =================
-def safe_err(e):
-    return str(e)[:300]
+
+# ================= DATABASE =================
 
 def get_user_by_telegram(telegram_id):
     conn = get_connection()
@@ -37,188 +41,329 @@ def get_user_by_telegram(telegram_id):
     conn.close()
     return row
 
-def link_telegram(user_id, telegram_id):
+
+def get_last_payments(user_id):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET telegram_id = %s WHERE id = %s", (telegram_id, user_id))
+    cur.execute("""
+        SELECT id, description, amount, due_date
+        FROM payments
+        WHERE user_id = %s
+        ORDER BY id DESC
+        LIMIT 5
+    """, (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+def delete_payment(payment_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM payments WHERE id = %s", (payment_id,))
     conn.commit()
     cur.close()
     conn.close()
 
-def unlink_telegram(telegram_id):
+
+def update_payment_value(payment_id, value):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET telegram_id = NULL WHERE telegram_id = %s", (telegram_id,))
+    cur.execute("UPDATE payments SET amount = %s WHERE id = %s",
+                (value, payment_id))
     conn.commit()
     cur.close()
     conn.close()
 
-def list_categories(user_id):
-    return repos.list_categories(user_id)
+
+# ================= INTELIGÊNCIA CATEGORIA =================
+
+def detectar_categoria(user_id, desc):
+    desc_lower = desc.lower()
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Histórico parecido
+    cur.execute("""
+        SELECT category_id
+        FROM payments
+        WHERE user_id = %s
+        AND LOWER(description) LIKE %s
+        AND category_id IS NOT NULL
+        LIMIT 1
+    """, (user_id, f"%{desc_lower}%"))
+    row = cur.fetchone()
+
+    if row:
+        cur.close()
+        conn.close()
+        return row["category_id"]
+
+    # Palavra-chave simples
+    cur.execute("SELECT id, name FROM categories WHERE user_id = %s",
+                (user_id,))
+    categorias = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    for cat in categorias:
+        nome = cat["name"].lower()
+
+        if nome in desc_lower:
+            return cat["id"]
+
+        if nome == "transporte" and any(p in desc_lower for p in ["uber", "99", "taxi"]):
+            return cat["id"]
+
+        if nome == "alimentação" and any(p in desc_lower for p in ["mercado", "pizza", "lanche"]):
+            return cat["id"]
+
+    return None
+
 
 # ================= HELP =================
-HELP_TEXT = """
-🤖 MARTINS FINANCE BOT
 
-🟢 Modo rápido:
-Envie:
+HELP_TEXT = """
+🤖 *Martins Finance Bot*
+
+📌 COMO LANÇAR DESPESA RÁPIDA:
+Digite:
+`200 mercado 10/05`
+
+Formato:
 valor descrição dia/mês
 
 Ex:
-200 mercado 10/05
-1200 notebook 6x 10/05
+`30 uber 06/04`
+`1200 notebook 6x 10/05`
 
 • Compra = hoje
 • Vencimento = data digitada
-• Categoria detectada automaticamente
+• Categoria = detectada automaticamente
 
-🔵 Modo guiado:
-Use /nova
-
-📌 Comandos:
-/login
-/status
-/logout
+📌 MODO GUIADO:
 /nova
-/cancel
+
+📌 EXCLUIR OU EDITAR:
+/listar
+(O bot mostra botões para excluir ou editar)
+
+📌 COMANDOS:
+/login
+/listar
+/logout
 /help
 """
 
-NOT_LOGGED = "🔐 Você não está logado. Use /login para entrar."
-
-# ================= START =================
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    row = get_user_by_telegram(update.effective_user.id)
-    if row:
-        await update.message.reply_text("✅ Você já está logado.\n\nUse /help para ver como lançar despesas.")
-    else:
-        await update.message.reply_text("👋 Bem-vindo!\n\n" + NOT_LOGGED)
-
 # ================= LOGIN =================
+
 async def login(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👤 Informe seu usuário:")
+    await update.message.reply_text("Digite seu usuário:")
     return LOGIN_USER
+
 
 async def login_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["username"] = update.message.text.strip().lower()
-    await update.message.reply_text("🔒 Informe sua senha:")
+    await update.message.reply_text("Digite sua senha:")
     return LOGIN_PASS
+
 
 async def login_pass(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = context.user_data.get("username")
     password = update.message.text.strip()
 
-    try:
-        user_id = authenticate(username, password)
-    except Exception as e:
-        await update.message.reply_text(f"❌ Erro no banco:\n{safe_err(e)}")
-        return ConversationHandler.END
+    await update.message.reply_text("Validando credenciais...")
+
+    user_id = authenticate(username, password)
 
     if not user_id:
-        await update.message.reply_text("❌ Usuário ou senha inválidos.")
+        await update.message.reply_text("Usuário ou senha inválidos.")
         return ConversationHandler.END
 
-    link_telegram(user_id, update.effective_user.id)
+    telegram_id = update.effective_user.id
 
-    await update.message.reply_text("✅ Login realizado com sucesso!\n\nAgora envie uma despesa ou use /help.")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET telegram_id = %s WHERE id = %s",
+                (telegram_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    await update.message.reply_text("✅ Login realizado com sucesso!")
     return ConversationHandler.END
 
-# ================= STATUS =================
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    row = get_user_by_telegram(update.effective_user.id)
-    if row:
-        await update.message.reply_text(f"✅ Logado como {row['username']}")
-    else:
-        await update.message.reply_text(NOT_LOGGED)
 
-# ================= LOGOUT =================
-async def logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    unlink_telegram(update.effective_user.id)
-    await update.message.reply_text("✅ Logout realizado.")
+# ================= LISTAR =================
 
-# ================= PARSER INTELIGENTE =================
-def parse_message(text, user_id):
-    text_lower = text.lower()
+async def listar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_id = update.effective_user.id
+    user = get_user_by_telegram(telegram_id)
 
-    # Valor
-    match_val = re.search(r"\d+[.,]?\d*", text)
-    if not match_val:
-        return None
-    valor = float(match_val.group().replace(",", "."))
-
-    # Parcelas
-    match_parc = re.search(r"(\d+)x", text_lower)
-    parcelas = int(match_parc.group(1)) if match_parc else 1
-
-    # Data
-    match_date = re.search(r"\d{1,2}/\d{1,2}", text)
-    venc = datetime.today().date()
-    if match_date:
-        venc = datetime.strptime(match_date.group() + f"/{datetime.today().year}", "%d/%m/%Y").date()
-
-    # Categoria automática
-    categorias = list_categories(user_id)
-    categoria_id = None
-
-    for cat in categorias:
-        if cat["name"].lower() in text_lower:
-            categoria_id = cat["id"]
-            break
-
-    # Descrição limpa
-    desc = text
-    desc = re.sub(r"\d+[.,]?\d*", "", desc, count=1)
-    desc = re.sub(r"\d+x", "", desc)
-    desc = re.sub(r"\d{1,2}/\d{1,2}", "", desc)
-    desc = desc.strip()
-
-    return desc.title(), valor, parcelas, venc, categoria_id
-
-# ================= MENSAGEM LIVRE =================
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-
-    if text.lower() in ["oi", "olá", "ola", "ajuda", "help"]:
-        await update.message.reply_text(HELP_TEXT)
+    if not user:
+        await update.message.reply_text("Faça login com /login")
         return
 
-    row = get_user_by_telegram(update.effective_user.id)
-    if not row:
-        await update.message.reply_text(NOT_LOGGED)
+    pagamentos = get_last_payments(user["id"])
+
+    if not pagamentos:
+        await update.message.reply_text("Nenhuma despesa encontrada.")
         return
 
-    parsed = parse_message(text, row["id"])
-    if not parsed:
-        await update.message.reply_text("❌ Não entendi.\nUse /help para exemplos.")
-        return
+    texto = "📋 Últimas despesas:\n\n"
+    keyboard = []
 
-    desc, valor, parcelas, venc, categoria_id = parsed
+    for p in pagamentos:
+        texto += f"{p['description']} - R$ {p['amount']}\n"
 
-    try:
-        repos.add_payment(
-            user_id=row["id"],
-            description=desc,
-            amount=valor,
-            purchase_date=str(datetime.today().date()),
-            due_date=str(venc),
-            month=venc.month,
-            year=venc.year,
-            category_id=categoria_id,
-            is_credit=True if parcelas > 1 else False,
-            installments=parcelas
+        keyboard.append([
+            InlineKeyboardButton("❌ Excluir", callback_data=f"del_{p['id']}"),
+            InlineKeyboardButton("✏ Editar valor", callback_data=f"edit_{p['id']}")
+        ])
+
+    await update.message.reply_text(
+        texto,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
+# ================= CALLBACK =================
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+
+    if data.startswith("del_"):
+        payment_id = int(data.split("_")[1])
+
+        keyboard = [[
+            InlineKeyboardButton("✅ Confirmar exclusão",
+                                 callback_data=f"confirm_{payment_id}")
+        ]]
+
+        await query.edit_message_text(
+            "Tem certeza que deseja excluir essa despesa?",
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
-    except Exception as e:
-        await update.message.reply_text(f"❌ Erro ao salvar:\n{safe_err(e)}")
-        print(traceback.format_exc())
+
+    elif data.startswith("confirm_"):
+        payment_id = int(data.split("_")[1])
+        delete_payment(payment_id)
+        await query.edit_message_text("🗑 Despesa excluída com sucesso.")
+
+    elif data.startswith("edit_"):
+        payment_id = int(data.split("_")[1])
+        context.user_data["edit_id"] = payment_id
+        await query.edit_message_text("Digite o novo valor:")
+        return EDIT_VALUE
+
+
+async def editar_valor(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        novo_valor = float(update.message.text.replace(",", "."))
+    except:
+        await update.message.reply_text("Valor inválido.")
+        return EDIT_VALUE
+
+    payment_id = context.user_data.get("edit_id")
+    update_payment_value(payment_id, novo_valor)
+
+    await update.message.reply_text("✏ Valor atualizado com sucesso!")
+    return ConversationHandler.END
+
+
+# ================= PARSER DESPESA =================
+
+def limpar_descricao(texto):
+    desc = re.sub(r"\d+[.,]?\d*", "", texto, count=1)
+    desc = re.sub(r"\d{1,2}/\d{1,2}", "", desc, count=1)
+    desc = re.sub(r"\s+", " ", desc).strip()
+
+    palavras = desc.split()
+    resultado = []
+
+    for p in palavras:
+        if not resultado or resultado[-1].lower() != p.lower():
+            resultado.append(p)
+
+    return " ".join(resultado)
+
+
+# ================= TEXTO LIVRE =================
+
+async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    texto = update.message.text.strip().lower()
+
+    if texto in ["oi", "ola", "olá"]:
+        await update.message.reply_text(HELP_TEXT, parse_mode="Markdown")
         return
 
-    msg = f"✅ Despesa cadastrada!\n\n🧾 {desc}\n💰 {valor}\n📅 Venc: {venc.strftime('%d/%m/%Y')}"
-    if parcelas > 1:
-        msg += f"\n💳 Parcelado em {parcelas}x"
+    if texto in ["excluir", "apagar"]:
+        await listar(update, context)
+        return
+
+    telegram_id = update.effective_user.id
+    user = get_user_by_telegram(telegram_id)
+
+    if not user:
+        await update.message.reply_text("Faça login com /login")
+        return
+
+    m_val = re.search(r"(\d+[.,]?\d*)", texto)
+    m_date = re.search(r"(\d{1,2}/\d{1,2})", texto)
+
+    if not m_val:
+        await update.message.reply_text("Formato inválido. Use: 200 mercado 10/05")
+        return
+
+    valor = float(m_val.group(1).replace(",", "."))
+    desc = limpar_descricao(texto)
+
+    if not desc:
+        desc = "Despesa"
+
+    if not m_date:
+        venc = datetime.today().date()
+    else:
+        venc = datetime.strptime(
+            f"{m_date.group(1)}/{datetime.today().year}",
+            "%d/%m/%Y"
+        ).date()
+
+    categoria_id = detectar_categoria(user["id"], desc)
+
+    payment_id = repos.add_payment(
+        user_id=user["id"],
+        description=desc.title(),
+        amount=valor,
+        purchase_date=str(datetime.today().date()),
+        due_date=str(venc),
+        month=venc.month,
+        year=venc.year,
+        category_id=categoria_id,
+        is_credit=False,
+        installments=1
+    )
+
+    context.user_data["last_payment"] = payment_id
+
+    msg = "✅ Despesa cadastrada!\n\n"
+    msg += f"{desc.title()} - R$ {valor}\n"
+    msg += f"Venc: {venc.strftime('%d/%m/%Y')}"
+
+    if categoria_id:
+        msg += "\nCategoria detectada automaticamente ✔"
 
     await update.message.reply_text(msg)
 
+
 # ================= MAIN =================
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
@@ -228,19 +373,27 @@ def main():
             LOGIN_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_user)],
             LOGIN_PASS: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_pass)],
         },
-        fallbacks=[]
+        fallbacks=[],
     )
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(HELP_TEXT)))
-    app.add_handler(CommandHandler("status", status))
-    app.add_handler(CommandHandler("logout", logout))
-    app.add_handler(login_handler)
+    edit_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(button_handler)],
+        states={
+            EDIT_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, editar_valor)]
+        },
+        fallbacks=[],
+        per_message=False
+    )
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(HELP_TEXT, parse_mode="Markdown")))
+    app.add_handler(CommandHandler("listar", listar))
+    app.add_handler(login_handler)
+    app.add_handler(edit_handler)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
 
     print("Bot rodando...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
