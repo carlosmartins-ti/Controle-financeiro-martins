@@ -1,4 +1,5 @@
 import re
+import os
 from datetime import datetime
 from telegram import Update
 from telegram.ext import (
@@ -16,7 +17,6 @@ from database import get_connection
 
 
 # ================= CONFIG =================
-import os
 TOKEN = os.getenv("BOT_TOKEN")
 
 
@@ -58,13 +58,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_id:
         await update.message.reply_text(
-            "👋 Olá! Você já está logado.\n"
+            "👋 Olá! Você já está logado.\n\n"
             "Envie uma despesa como:\n"
-            "200 academia 10/05"
+            "200 academia 10/05\n\n"
+            "Ou digite /nova para cadastro guiado."
         )
     else:
         await update.message.reply_text(
-            "👋 Bem-vindo!\nUse /login para acessar sua conta."
+            "👋 Bem-vindo ao Martins Finance!\n\n"
+            "Para começar, digite /login"
         )
 
 
@@ -88,13 +90,24 @@ async def login_pass(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = authenticate(username, password)
 
     if not user_id:
-        await update.message.reply_text("❌ Usuário ou senha inválidos.")
+        await update.message.reply_text(
+            "❌ Usuário ou senha inválidos.\n\n"
+            "Digite /login para tentar novamente."
+        )
         return ConversationHandler.END
 
     telegram_id = update.effective_user.id
     link_telegram(user_id, telegram_id)
 
-    await update.message.reply_text("✅ Login realizado com sucesso!")
+    await update.message.reply_text(
+        "✅ Login realizado com sucesso!\n\n"
+        "🎉 Agora você pode cadastrar suas despesas!\n\n"
+        "Automático:\n"
+        "200 academia 10/05\n\n"
+        "Ou guiado:\n"
+        "/nova"
+    )
+
     return ConversationHandler.END
 
 
@@ -105,7 +118,9 @@ async def nova(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = get_user_by_telegram(telegram_id)
 
     if not user_id:
-        await update.message.reply_text("⚠️ Você precisa usar /login primeiro.")
+        await update.message.reply_text(
+            "🔐 Você precisa fazer login primeiro.\n\nDigite /login"
+        )
         return ConversationHandler.END
 
     context.user_data["user_id"] = user_id
@@ -164,7 +179,7 @@ async def receber_venc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         installments=1
     )
 
-    await update.message.reply_text("✅ Despesa cadastrada!")
+    await update.message.reply_text("✅ Despesa cadastrada com sucesso!")
     return ConversationHandler.END
 
 
@@ -173,18 +188,21 @@ async def receber_venc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def interpretar_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = update.effective_user.id
     user_id = get_user_by_telegram(telegram_id)
-
     texto = update.message.text.lower().strip()
 
     if not user_id:
-        await update.message.reply_text("⚠️ Use /login para acessar sua conta.")
+        await update.message.reply_text(
+            "🔐 Você ainda não está logado.\n\n"
+            "Digite /login para acessar sua conta."
+        )
         return
 
-    # Saudações
     if texto in ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite"]:
         await update.message.reply_text(
-            "👋 Olá! Envie algo como:\n"
-            "200 academia 10/05"
+            "👋 Olá!\n\n"
+            "Envie sua despesa no formato:\n"
+            "200 mercado 05/05\n\n"
+            "Ou digite /nova"
         )
         return
 
@@ -193,7 +211,9 @@ async def interpretar_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data_match = re.findall(r"\d{1,2}/\d{1,2}", texto)
 
         if not valor_match:
-            await update.message.reply_text("Não entendi 🤔")
+            await update.message.reply_text(
+                "Não entendi 🤔\n\nExemplo:\n200 academia 10/05"
+            )
             return
 
         valor = float(valor_match.group().replace(",", "."))
@@ -202,7 +222,7 @@ async def interpretar_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         compra = datetime.today().date()
         venc = compra
 
-        if len(data_match) >= 1:
+        if data_match:
             venc = datetime.strptime(
                 data_match[0] + f"/{datetime.today().year}",
                 "%d/%m/%Y"
@@ -221,10 +241,17 @@ async def interpretar_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             installments=1
         )
 
-        await update.message.reply_text("✅ Despesa cadastrada automaticamente!")
+        await update.message.reply_text(
+            f"✅ Despesa cadastrada!\n\n"
+            f"📌 {desc.title()}\n"
+            f"💰 R$ {valor:.2f}\n"
+            f"📅 Venc: {venc.strftime('%d/%m/%Y')}"
+        )
 
     except:
-        await update.message.reply_text("Não consegui entender 🤖")
+        await update.message.reply_text(
+            "🤖 Não consegui interpretar.\nEx: 200 academia 10/05"
+        )
 
 
 # ================= MAIN =================
