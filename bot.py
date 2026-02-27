@@ -1,4 +1,4 @@
-import os
+import re
 from datetime import datetime
 from telegram import Update
 from telegram.ext import (
@@ -14,13 +14,17 @@ import repos
 from auth import authenticate
 from database import get_connection
 
+
+# ================= CONFIG =================
 TOKEN = "COLOQUE_SEU_TOKEN_AQUI"
 
+
+# ================= STATES =================
 LOGIN_USER, LOGIN_PASS = range(2)
 DESC, VALOR, COMPRA, VENC = range(10, 14)
 
 
-# ================= UTIL =================
+# ================= DATABASE HELPERS =================
 
 def get_user_by_telegram(telegram_id):
     conn = get_connection()
@@ -53,7 +57,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_id:
         await update.message.reply_text(
-            "✅ Você já está logado.\nUse /nova para cadastrar despesa."
+            "👋 Olá! Você já está logado.\n"
+            "Envie uma despesa como:\n"
+            "200 academia 10/05"
         )
     else:
         await update.message.reply_text(
@@ -91,7 +97,7 @@ async def login_pass(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# ================= NOVA DESPESA =================
+# ================= CADASTRO GUIADO =================
 
 async def nova(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = update.effective_user.id
@@ -161,6 +167,65 @@ async def receber_venc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+# ================= INTERPRETAÇÃO INTELIGENTE =================
+
+async def interpretar_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_id = update.effective_user.id
+    user_id = get_user_by_telegram(telegram_id)
+
+    texto = update.message.text.lower().strip()
+
+    if not user_id:
+        await update.message.reply_text("⚠️ Use /login para acessar sua conta.")
+        return
+
+    # Saudações
+    if texto in ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite"]:
+        await update.message.reply_text(
+            "👋 Olá! Envie algo como:\n"
+            "200 academia 10/05"
+        )
+        return
+
+    try:
+        valor_match = re.search(r"\d+[.,]?\d*", texto)
+        data_match = re.findall(r"\d{1,2}/\d{1,2}", texto)
+
+        if not valor_match:
+            await update.message.reply_text("Não entendi 🤔")
+            return
+
+        valor = float(valor_match.group().replace(",", "."))
+        desc = re.sub(r"\d+[.,]?\d*", "", texto).strip()
+
+        compra = datetime.today().date()
+        venc = compra
+
+        if len(data_match) >= 1:
+            venc = datetime.strptime(
+                data_match[0] + f"/{datetime.today().year}",
+                "%d/%m/%Y"
+            ).date()
+
+        repos.add_payment(
+            user_id=user_id,
+            description=desc.title(),
+            amount=valor,
+            purchase_date=str(compra),
+            due_date=str(venc),
+            month=venc.month,
+            year=venc.year,
+            category_id=None,
+            is_credit=False,
+            installments=1
+        )
+
+        await update.message.reply_text("✅ Despesa cadastrada automaticamente!")
+
+    except:
+        await update.message.reply_text("Não consegui entender 🤖")
+
+
 # ================= MAIN =================
 
 def main():
@@ -189,6 +254,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(login_handler)
     app.add_handler(nova_handler)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, interpretar_texto))
 
     print("Bot rodando...")
     app.run_polling()
