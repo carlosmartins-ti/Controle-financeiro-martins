@@ -203,7 +203,7 @@ def list_payments(user_id, month, year):
     cur = conn.cursor()
 
     cur.execute(
-        """SELECT p.id, p.description, p.amount, p.due_date, p.paid,
+        """SELECT p.id, p.description, p.amount, p.purchase_date, p.due_date, p.paid,
                   p.paid_date, p.category_id, c.name AS category,
                   p.is_credit, p.installments, p.installment_index, p.credit_group
            FROM payments p
