@@ -452,29 +452,31 @@ def screen_app():
                             unsafe_allow_html=True
                         )
 
-                        col_btn1, col_btn2, col_btn3 = st.columns(3)
-                        
+                        col_btn1, col_btn2, col_btn3 = st.columns([1,1,1], gap="small")
 
-                        if not paid:
-                            if col_btn1.button("Marcar como paga", key=f"pay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, True)
-                                st.session_state.msg_ok = "Despesa marcada como paga!"
+                        with col_btn1:
+                            if not paid:
+                                if st.button("Pagar", key=f"pay_{pid}", use_container_width=True):
+                                    repos.mark_paid(st.session_state.user_id, pid, True)
+                                    st.session_state.msg_ok = "Despesa marcada como paga!"
+                                    st.rerun()
+                            else:
+                                if st.button("Desfazer", key=f"unpay_{pid}", use_container_width=True):
+                                    repos.mark_paid(st.session_state.user_id, pid, False)
+                                    st.session_state.msg_ok = "Pagamento desfeito!"
+                                    st.rerun()
+
+                        with col_btn2:
+                            if st.button("Editar", key=f"edit_{pid}", use_container_width=True):
+                                st.session_state.edit_id = pid
                                 st.rerun()
-                        else:
-                            if col_btn1.button("Desfazer", key=f"unpay_{pid}"):
-                                repos.mark_paid(st.session_state.user_id, pid, False)
-                                st.session_state.msg_ok = "Pagamento desfeito!"
+
+                        with col_btn3:
+                            if st.button("Excluir", key=f"del_{pid}", use_container_width=True):
+                                repos.delete_payment(st.session_state.user_id, pid)
+                                st.session_state.msg_ok = "Despesa excluída!"
                                 st.rerun()
-
-                        if col_btn2.button("✏️ Editar", key=f"edit_{pid}"):
-                            st.session_state.edit_id = pid
-                            st.rerun()
-
-                        if col_btn3.button("🗑️ Excluir", key=f"del_{pid}"):
-                            repos.delete_payment(st.session_state.user_id, pid)
-                            st.session_state.msg_ok = "Despesa excluída!"
-                            st.rerun()
-
+                                
                     if is_credit and int(installments) > 1 and credit_group:
                         with st.expander("🧩 Compra parcelada"):
                             if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
