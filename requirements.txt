@@ -5,5 +5,5 @@ openpyxl
 plotly
 reportlab
 psycopg2-binary
-python-telegram-bot==21.6
 python-telegram-bot==20.7
+
