@@ -174,7 +174,7 @@ def add_payment(
                 installment_index,
                 credit_group
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s)""",
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s)""",
             (
                 user_id,
                 f"{description} ({i+1}/{installments})" if installments > 1 else description,
