@@ -81,6 +81,11 @@ def init_db():
         credit_group INTEGER
     )
     """)
+        # 🔥 NOVO: purchase_date
+    cur.execute("""
+    ALTER TABLE payments
+    ADD COLUMN IF NOT EXISTS purchase_date DATE
+    """)
 
     # ---------- BUDGETS ----------
     cur.execute("""
