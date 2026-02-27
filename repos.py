@@ -145,6 +145,7 @@ def add_payment(
         parcel_value = round(amount, 2)
 
     base_date = datetime.fromisoformat(str(due_date))
+    purchase_dt = datetime.fromisoformat(str(purchase_date)).date() if purchase_date else None
 
     for i in range(installments):
         parcel_month = month + i
@@ -180,7 +181,7 @@ def add_payment(
                 f"{description} ({i+1}/{installments})" if installments > 1 else description,
                 category_id,
                 parcel_value,
-                purchase_date,
+                purchase_dt,
                 parcel_due.date(),
                 parcel_month,
                 parcel_year,
