@@ -69,7 +69,10 @@ def init_db():
         description TEXT NOT NULL,
         category_id INTEGER,
         amount NUMERIC(10,2) NOT NULL,
+
+        purchase_date DATE,              -- ✅ NOVO (já no create)
         due_date DATE NOT NULL,
+
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         paid BOOLEAN NOT NULL DEFAULT FALSE,
@@ -81,7 +84,8 @@ def init_db():
         credit_group INTEGER
     )
     """)
-        # 🔥 NOVO: purchase_date
+
+    # ✅ NOVO: garante a coluna em banco existente
     cur.execute("""
     ALTER TABLE payments
     ADD COLUMN IF NOT EXISTS purchase_date DATE
