@@ -446,7 +446,8 @@ def screen_app():
                         st.markdown(
                             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">'
                             f'<div style="font-size:22px;font-weight:700;">{fmt_brl(amount)}</div>'
-                            f'<div style="opacity:0.7;font-size:14px;">{format_date_br(due)}</div>'
+                            f'<div style="opacity:0.7;font-size:14px;">Venc: {format_date_br(due)}</div>'
+                            f'<div style="opacity:0.7;font-size:12px;">Compra: {format_date_br(purchase)}</div>'
                             f'</div>',
                             unsafe_allow_html=True
                         )
