@@ -352,14 +352,25 @@ def screen_app():
 
             with st.expander("➕ Adicionar despesa", expanded=True):
                 with st.form("form_add_despesa", clear_on_submit=True):
-                    a1, a2, a3, a4, a5 = st.columns([3, 1, 1.3, 2, 1])
-
+                    a1, a2, a3, a4, a5, a6 = st.columns([3, 1, 1.3, 1.3, 2, 1])
 
                     desc = a1.text_input("Descrição")
                     val = a2.number_input("Valor (R$)", min_value=0.0, step=10.0)
-                    venc = a3.date_input("Vencimento", value=date.today(), format="DD/MM/YYYY")
-                    cat_name = a4.selectbox("Categoria", cat_names)
-                    parcelas = a5.number_input("Parcelas", min_value=1, step=1, value=1)
+
+                    compra = a3.date_input(
+                        "Data da compra",
+                        value=date.today(),
+                        format="DD/MM/YYYY"
+                    )
+
+                    venc = a4.date_input(
+                        "Vencimento",
+                        value=date.today(),
+                        format="DD/MM/YYYY"
+                    )
+
+                    cat_name = a5.selectbox("Categoria", cat_names)
+                    parcelas = a6.number_input("Parcelas", min_value=1, step=1, value=1)
                     tipo_parcela = st.radio(
                          "Tipo de valor",
                          ["Valor total da compra", "Valor já é por parcela"],
@@ -381,9 +392,10 @@ def screen_app():
                         st.session_state.user_id,
                         desc.strip(),
                         float(val),
+                        str(compra),   # 👈 NOVO
                         str(venc),
-                        month,
-                        year,
+                        venc.month,    # 👈 mês baseado no vencimento
+                        venc.year, 
                         cid,
                         is_credit=True if parcelas > 1 else False,
                         installments=int(parcelas),
