@@ -30,6 +30,22 @@ LOGIN_USER, LOGIN_PASS = range(2)
 EDIT_VALUE = 10
 
 
+MESES_PT = {
+    1: "Janeiro",
+    2: "Fevereiro",
+    3: "Março",
+    4: "Abril",
+    5: "Maio",
+    6: "Junho",
+    7: "Julho",
+    8: "Agosto",
+    9: "Setembro",
+    10: "Outubro",
+    11: "Novembro",
+    12: "Dezembro",
+}
+
+
 # ================= DATABASE =================
 
 def get_user_by_telegram(telegram_id):
@@ -46,7 +62,7 @@ def get_last_payments(user_id):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, description, amount, due_date
+        SELECT id, description, amount, due_date, month, year, paid
         FROM payments
         WHERE user_id = %s
         ORDER BY id DESC
@@ -77,53 +93,6 @@ def update_payment_value(payment_id, value):
     conn.close()
 
 
-# ================= INTELIGÊNCIA CATEGORIA =================
-
-def detectar_categoria(user_id, desc):
-    desc_lower = desc.lower()
-
-    conn = get_connection()
-    cur = conn.cursor()
-
-    # Histórico parecido
-    cur.execute("""
-        SELECT category_id
-        FROM payments
-        WHERE user_id = %s
-        AND LOWER(description) LIKE %s
-        AND category_id IS NOT NULL
-        LIMIT 1
-    """, (user_id, f"%{desc_lower}%"))
-    row = cur.fetchone()
-
-    if row:
-        cur.close()
-        conn.close()
-        return row["category_id"]
-
-    # Palavra-chave simples
-    cur.execute("SELECT id, name FROM categories WHERE user_id = %s",
-                (user_id,))
-    categorias = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    for cat in categorias:
-        nome = cat["name"].lower()
-
-        if nome in desc_lower:
-            return cat["id"]
-
-        if nome == "transporte" and any(p in desc_lower for p in ["uber", "99", "taxi"]):
-            return cat["id"]
-
-        if nome == "alimentação" and any(p in desc_lower for p in ["mercado", "pizza", "lanche"]):
-            return cat["id"]
-
-    return None
-
-
 # ================= HELP =================
 
 HELP_TEXT = """
@@ -138,18 +107,19 @@ valor descrição dia/mês
 
 Ex:
 `30 uber 06/04`
-`1200 notebook 6x 10/05`
+`1200 notebook 10/05`
 
 • Compra = hoje
 • Vencimento = data digitada
-• Categoria = detectada automaticamente
+• Categoria automática
 
-📌 MODO GUIADO:
-/nova
-
-📌 EXCLUIR OU EDITAR:
+📌 PARA EDITAR OU EXCLUIR:
 /listar
-(O bot mostra botões para excluir ou editar)
+(O bot mostrará botões para cada despesa)
+
+📌 STATUS:
+• 🟢 Pago
+• 🔴 Em aberto
 
 📌 COMANDOS:
 /login
@@ -157,6 +127,7 @@ Ex:
 /logout
 /help
 """
+
 
 # ================= LOGIN =================
 
@@ -213,11 +184,20 @@ async def listar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Nenhuma despesa encontrada.")
         return
 
-    texto = "📋 Últimas despesas:\n\n"
+    texto = "📋 *Últimas despesas:*\n\n"
     keyboard = []
 
     for p in pagamentos:
-        texto += f"{p['description']} - R$ {p['amount']}\n"
+        mes_nome = MESES_PT.get(p["month"], "")
+        status = "🟢 Pago" if p["paid"] else "🔴 Em aberto"
+
+        texto += (
+            f"🧾 *{p['description']}*\n"
+            f"💰 R$ {p['amount']}\n"
+            f"📅 Venc: {p['due_date'].strftime('%d/%m/%Y')}\n"
+            f"📆 {mes_nome}/{p['year']}\n"
+            f"{status}\n\n"
+        )
 
         keyboard.append([
             InlineKeyboardButton("❌ Excluir", callback_data=f"del_{p['id']}"),
@@ -226,6 +206,7 @@ async def listar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         texto,
+        parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -277,7 +258,7 @@ async def editar_valor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# ================= PARSER DESPESA =================
+# ================= PARSER =================
 
 def limpar_descricao(texto):
     desc = re.sub(r"\d+[.,]?\d*", "", texto, count=1)
@@ -335,9 +316,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "%d/%m/%Y"
         ).date()
 
-    categoria_id = detectar_categoria(user["id"], desc)
-
-    payment_id = repos.add_payment(
+    repos.add_payment(
         user_id=user["id"],
         description=desc.title(),
         amount=valor,
@@ -345,21 +324,16 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         due_date=str(venc),
         month=venc.month,
         year=venc.year,
-        category_id=categoria_id,
+        category_id=None,
         is_credit=False,
         installments=1
     )
 
-    context.user_data["last_payment"] = payment_id
-
-    msg = "✅ Despesa cadastrada!\n\n"
-    msg += f"{desc.title()} - R$ {valor}\n"
-    msg += f"Venc: {venc.strftime('%d/%m/%Y')}"
-
-    if categoria_id:
-        msg += "\nCategoria detectada automaticamente ✔"
-
-    await update.message.reply_text(msg)
+    await update.message.reply_text(
+        f"✅ Despesa cadastrada!\n\n"
+        f"{desc.title()} - R$ {valor}\n"
+        f"Venc: {venc.strftime('%d/%m/%Y')}"
+    )
 
 
 # ================= MAIN =================
