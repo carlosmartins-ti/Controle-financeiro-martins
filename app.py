@@ -241,37 +241,34 @@ def screen_app():
                 )
 
                 table_data = []
+
+                # título
                 table_data.append(
                     [f"Despesas - {month_label}/{year}", "", "", ""]
                 )
+
+                # cabeçalho
                 table_data.append(
                     ["Descrição", "Categoria", "Valor (R$)", "Status"]
                 )
 
-                total_tbl = 0.0
-
+                # dados
                 for r in data:
                     nome = (r.get("description") or "").strip()
-                    categoria = (r.get("category") or "").strip()
+                    categoria = str(r.get("category") or "Sem categoria")
                     valor = float(r.get("amount") or 0)
                     pago = r.get("paid")
 
-                    total_tbl += valor
-
-                    status = (
-                        "Pago"
-                        if str(pago).lower() in ["true", "t", "1"]
-                        else "Em aberto"
-                    )
+                    status = "Pago" if pago else "Em aberto"
 
                     table_data.append(
                         [nome, categoria, fmt_brl(valor), status]
                     )
 
+                # total
                 table_data.append(
                     ["TOTAL", "", fmt_brl(total_tbl), ""]
                 )
-
                 table = Table(
                     table_data, colWidths=[220, 120, 90, 90]
                 )
