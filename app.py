@@ -242,7 +242,7 @@ def screen_app():
 
                 table_data = []
                 table_data.append(
-                    [f"Despesas - {month_label}/{year}", "", ""]
+                    [f"Despesas - {month_label}/{year}", "", "", ""]
                 )
                 table_data.append(
                     ["Descrição", "Categoria", "Valor (R$)", "Status"]
