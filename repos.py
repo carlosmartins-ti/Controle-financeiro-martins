@@ -1,437 +1,602 @@
-from database import get_connection
-from datetime import datetime
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import date, datetime
+import streamlit.components.v1 as components
 
-# ================= DEFAULT CATEGORIES =================
-DEFAULT_CATEGORIES = [
-    "Aluguel",
-    "Condomínio",
-    "Água",
-    "Luz",
-    "Internet",
-    "Plano celular",
-    "Mercado",
-    "Cartão de crédito",
-    "Outros"
+from database import init_db
+from auth import authenticate, create_user, get_security_question, reset_password
+import repos
+
+# ================= SETUP =================
+st.set_page_config(
+    page_title="Controle Financeiro",
+    page_icon="💳",
+    layout="wide"
+)
+
+with open("style.css", "r", encoding="utf-8") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+init_db()
+
+ADMIN_USERNAME = "carlos.martins"
+
+MESES = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
 ]
 
-# ================= USERS (REMEMBER ME) =================
-def get_user_by_token(token):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT id, username FROM users WHERE remember_token = %s",
-        (token,)
-    )
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-    return row
+# ================= UTILS =================
+def fmt_brl(v):
+    return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-
-def save_remember_token(user_id, token):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "UPDATE users SET remember_token = %s WHERE id = %s",
-        (token, user_id)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def clear_remember_token(user_id):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "UPDATE users SET remember_token = NULL WHERE id = %s",
-        (user_id,)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-
-# ================= CATEGORIES =================
-def seed_default_categories(user_id):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    for name in DEFAULT_CATEGORIES:
-        cur.execute(
-            """INSERT INTO categories (user_id, name, created_at)
-               VALUES (%s, %s, %s)
-               ON CONFLICT (user_id, name) DO NOTHING""",
-            (user_id, name, datetime.now())
-        )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def list_categories(user_id):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT id, name FROM categories WHERE user_id = %s ORDER BY name",
-        (user_id,)
-    )
-
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
-
-
-def create_category(user_id, name):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "INSERT INTO categories (user_id, name, created_at) VALUES (%s, %s, %s)",
-        (user_id, name, datetime.now())
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def delete_category(user_id, category_id):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "DELETE FROM categories WHERE id = %s AND user_id = %s",
-        (category_id, user_id)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-# ================= PAYMENTS =================
-def add_payment(
-    user_id,
-    description,
-    amount,
-    purchase_date,   # 👈 NOVO
-    due_date,
-    month,
-    year,
-    category_id=None,
-    is_credit=False,
-    installments=1,
-    parcel_type="total"  # NOVO
-):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    amount = float(amount)
-    installments = int(installments)
-
-    credit_group = int(datetime.now().timestamp())
-    if is_credit and installments > 1:
-
-        if parcel_type == "total":
-            # valor digitado é o valor TOTAL da compra
-            parcel_value = round(amount / installments, 2)
-        else:
-            # valor digitado já é o valor de cada parcela
-            parcel_value = round(amount, 2)
-
-    else:
-        parcel_value = round(amount, 2)
-
-    base_date = datetime.fromisoformat(str(due_date))
-    purchase_dt = datetime.fromisoformat(str(purchase_date)).date() if purchase_date else None
-
-    for i in range(installments):
-        parcel_month = month + i
-        parcel_year = year
-
-        while parcel_month > 12:
-            parcel_month -= 12
-            parcel_year += 1
-
-        parcel_due = base_date.replace(month=parcel_month, year=parcel_year)
-
-        cur.execute(
-            """INSERT INTO payments (
-                user_id,
-                description,
-                category_id,
-                amount,
-                purchase_date,
-                due_date,
-                month,
-                year,
-                paid,
-                paid_date,
-                created_at,
-                is_credit,
-                installments,
-                installment_index,
-                credit_group
-            )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s)""",
-            (
-                user_id,
-                f"{description} ({i+1}/{installments})" if installments > 1 else description,
-                category_id,
-                parcel_value,
-                purchase_dt,
-                parcel_due.date(),
-                parcel_month,
-                parcel_year,
-                False,
-                None,
-                bool(is_credit),
-                installments,
-                i + 1,
-                credit_group
-            )
-        )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def list_payments(user_id, month, year):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """SELECT p.id, p.description, p.amount, p.purchase_date, p.due_date, p.paid,
-                  p.paid_date, p.category_id, c.name AS category,
-                  p.is_credit, p.installments, p.installment_index, p.credit_group
-           FROM payments p
-           LEFT JOIN categories c ON c.id = p.category_id
-           WHERE p.user_id = %s AND p.month = %s AND p.year = %s
-           ORDER BY p.due_date""",
-        (user_id, month, year)
-    )
-
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
-
-
-def mark_paid(user_id, payment_id, paid):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "UPDATE payments SET paid = %s, paid_date = %s WHERE id = %s AND user_id = %s",
-        (bool(paid), datetime.now() if paid else None, payment_id, user_id)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def update_payment(user_id, payment_id, description, amount, purchase_date, due_date, category_id):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    purchase_dt = datetime.fromisoformat(str(purchase_date)).date() if purchase_date else None
-
-    cur.execute(
-        """UPDATE payments
-              SET description = %s,
-                  amount = %s,
-                  purchase_date = %s,
-                  due_date = %s,
-                  category_id = %s
-            WHERE id = %s AND user_id = %s""",
-        (description, amount, purchase_dt, due_date, category_id, payment_id, user_id)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def delete_payment(user_id, payment_id):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "DELETE FROM payments WHERE id = %s AND user_id = %s",
-        (payment_id, user_id)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-# ================= BUDGET =================
-def get_budget(user_id, month, year):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT income, expense_goal FROM budgets WHERE user_id = %s AND month = %s AND year = %s",
-        (user_id, month, year)
-    )
-
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if not row:
-        return {"income": 0.0, "expense_goal": 0.0}
-
-    return {
-        "income": float(row["income"]),
-        "expense_goal": float(row["expense_goal"])
-    }
-
-
-def upsert_budget(user_id, month, year, income, expense_goal):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """INSERT INTO budgets (user_id, month, year, income, expense_goal, created_at)
-           VALUES (%s, %s, %s, %s, %s, %s)
-           ON CONFLICT (user_id, month, year)
-           DO UPDATE SET income = %s, expense_goal = %s""",
-        (user_id, month, year, income, expense_goal, datetime.now(), income, expense_goal)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-# ================= FATURA DO CARTÃO =================
-def _get_card_category_ids(conn, user_id):
-    cur = conn.cursor()
-    cur.execute(
-        """SELECT id
-           FROM categories
-           WHERE user_id = %s
-             AND LOWER(name) LIKE %s""",
-        (user_id, '%cart%')
-    )
-
-    rows = cur.fetchall()
-    cur.close()
-
-    return [r["id"] for r in rows] if rows else []
-
-
-def mark_credit_invoice_paid(user_id, month, year):
-    conn = get_connection()
-    conn.autocommit = False
-
+def format_date_br(s):
+    if not s:
+        return ""
     try:
-        card_ids = _get_card_category_ids(conn, user_id)
-        if not card_ids:
-            conn.commit()
+        return datetime.fromisoformat(str(s)).strftime("%d/%m/%Y")
+    except:
+        return str(s)
+
+def is_admin():
+    return st.session_state.username == ADMIN_USERNAME
+
+# ================= SESSION =================
+for k in ["user_id", "username", "edit_id", "msg_ok"]:
+    if k not in st.session_state:
+        st.session_state[k] = None
+
+# ================= COMPLEMENTO (APENAS ADICIONADO) =================
+# Estado para controlar "voltar ao app" após gerar PDF
+if "pdf_relatorio_path" not in st.session_state:
+    st.session_state.pdf_relatorio_path = None
+
+if "pdf_relatorio_nome" not in st.session_state:
+    st.session_state.pdf_relatorio_nome = None
+
+# ================= AUTH =================
+def screen_auth():
+    st.title("💳 Controle Financeiro")
+
+
+    components.html(
+        '''
+        <div style="
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 14px 0;
+            color: #e5e7eb;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+            font-family: system-ui;
+        ">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:22px">🔐</span>
+                <strong>Autenticação e autoria do projeto</strong>
+            </div>
+            <div style="margin-top:10px;font-size:14px">
+                Aplicação desenvolvida por <strong>Carlos Martins</strong>.<br>
+                Para dúvidas, sugestões ou suporte técnico:
+            </div>
+            <div style="margin-top:8px">
+                📧 <a href="mailto:cr954479@gmail.com" style="color:#60a5fa">cr954479@gmail.com</a>
+            </div>
+        </div>
+        ''',
+        height=170
+    )
+
+    t1, t2, t3 = st.tabs(["Entrar", "Criar conta", "Recuperar senha"])
+
+    with t1:
+        u = st.text_input("Usuário", key="login_user")
+        p = st.text_input("Senha", type="password", key="login_pass")
+
+        if st.button("Entrar", key="btn_login"):
+            uid = authenticate(u, p)
+            if uid:
+                st.session_state.user_id = uid
+                st.session_state.username = u.strip().lower()
+                st.rerun()
+            else:
+                st.error("Usuário ou senha inválidos.")
+
+    with t2:
+        u = st.text_input("Novo usuário", key="signup_user")
+        p = st.text_input("Nova senha", type="password", key="signup_pass")
+        q = st.selectbox(
+            "Pergunta de segurança",
+            [
+                "Qual o nome do seu primeiro pet?",
+                "Qual o nome da sua mãe?",
+                "Qual sua cidade de nascimento?",
+                "Qual seu filme favorito?"
+            ],
+            key="signup_q"
+        )
+        a = st.text_input("Resposta", key="signup_answer")
+
+        if st.button("Criar conta", key="btn_signup"):
+            create_user(u, p, q, a)
+            uid = authenticate(u, p)
+            st.session_state.user_id = uid
+            st.session_state.username = u.strip().lower()
+            repos.seed_default_categories(uid)
+            st.success("Conta criada com sucesso.")
+            st.rerun()
+
+    with t3:
+        u = st.text_input("Usuário", key="reset_user")
+        q = get_security_question(u) if u else None
+
+        if q:
+            st.info(q)
+            a = st.text_input("Resposta", key="reset_answer")
+            np = st.text_input("Nova senha", type="password", key="reset_pass")
+
+            if st.button("Redefinir senha", key="btn_reset"):
+                if reset_password(u, a, np):
+                    st.success("Senha alterada!")
+                else:
+                    st.error("Resposta incorreta.")
+
+# ================= APP =================
+def screen_app():
+    try:
+        if not st.session_state.user_id:
+            st.error("Usuário não autenticado.")
             return
 
-        cur = conn.cursor()
-        cur.execute(
-            """UPDATE payments
-                   SET paid = TRUE,
-                       paid_date = CURRENT_DATE
-                 WHERE user_id = %s
-                   AND month = %s
-                   AND year = %s
-                   AND category_id = ANY(%s)
-                   AND paid = FALSE""",
-            (user_id, month, year, card_ids)
-        )
-
-        cur.close()
-        conn.commit()
-    finally:
-        conn.close()
+        with st.sidebar:
+            st.markdown(f"**Usuário:** {st.session_state.username}")
+            if is_admin():
+                st.caption("🔑 Administrador")
 
 
-def unmark_credit_invoice_paid(user_id, month, year):
-    conn = get_connection()
-    conn.autocommit = False
+            today = date.today()
+            month_label = st.selectbox("Mês", MESES, index=today.month - 1)
+            year = st.selectbox("Ano", list(range(today.year - 2, today.year + 3)), index=2)
+            month = MESES.index(month_label) + 1
 
-    try:
-        card_ids = _get_card_category_ids(conn, user_id)
-        if not card_ids:
-            conn.commit()
-            return
+            st.divider()
+            page = st.radio(
+                "Menu",
+                ["📊 Dashboard", "🧾 Despesas", "🏷️ Categorias", "💰 Planejamento"]
+            )
 
-        cur = conn.cursor()
-        cur.execute(
-            """UPDATE payments
-                   SET paid = FALSE,
-                       paid_date = NULL
-                 WHERE user_id = %s
-                   AND month = %s
-                   AND year = %s
-                   AND category_id = ANY(%s)
-                   AND paid = TRUE""",
-            (user_id, month, year, card_ids)
-        )
 
-        cur.close()
-        conn.commit()
-    finally:
-        conn.close()
+            if st.button("Sair", use_container_width=True):
+                st.session_state.user_id = None
+                st.session_state.username = None
+                st.rerun()
 
-# ================= EXCLUIR COMPRA PARCELADA =================
-def delete_credit_group(user_id, credit_group, only_open=True):
-    conn = get_connection()
-    cur = conn.cursor()
 
-    if only_open:
-        cur.execute(
-            """DELETE FROM payments
-               WHERE user_id = %s
-                 AND credit_group = %s
-                 AND paid = FALSE""",
-            (user_id, credit_group)
-        )
-    else:
-        cur.execute(
-            """DELETE FROM payments
-               WHERE user_id = %s
-                 AND credit_group = %s""",
-            (user_id, credit_group)
-        )
+        if st.session_state.msg_ok:
+            st.toast(st.session_state.msg_ok, icon="✅", duration=15)
+            st.session_state.msg_ok = None
 
-    conn.commit()
-    cur.close()
-    conn.close()
 
-# ================= RELATÓRIO DE DESPESAS (PDF) =================
-def get_expenses_report(user_id, month, year):
-    """Retorna despesas consolidadas do mês/ano para geração de PDF"""
-    conn = get_connection()
-    cur = conn.cursor()
+        repos.seed_default_categories(st.session_state.user_id)
 
-    cur.execute(
-        """
-        SELECT
-            COALESCE(c.name, p.description) AS name,
-            SUM(p.amount) AS total,
-            SUM(CASE WHEN p.paid = TRUE THEN p.amount ELSE 0 END) AS paid_total,
-            SUM(CASE WHEN p.paid = FALSE THEN p.amount ELSE 0 END) AS open_total
-        FROM payments p
-        LEFT JOIN categories c ON c.id = p.category_id
-        WHERE p.user_id = %s
-          AND p.month = %s
-          AND p.year = %s
-        GROUP BY COALESCE(c.name, p.description)
-        ORDER BY COALESCE(c.name, p.description)
-        """,
-        (user_id, month, year)
-    )
 
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
+        rows = repos.list_payments(st.session_state.user_id, month, year)
+        df = pd.DataFrame(rows)
+
+
+        total = float(df["amount"].sum()) if not df.empty else 0.0
+        pago = float(df[df["paid"] == True]["amount"].sum()) if not df.empty else 0.0
+        aberto = total - pago
+
+        budget = repos.get_budget(st.session_state.user_id, month, year)
+        renda = float(budget["income"])
+
+        saldo = float(renda) - float(total)
+
+        st.title("💳 Controle Financeiro")
+        st.caption(f"Período: **{month_label}/{year}**")
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total do mês", fmt_brl(total))
+        c2.metric("Pago", fmt_brl(pago))
+        c3.metric("Em aberto", fmt_brl(aberto))
+        c4.metric("Saldo", fmt_brl(saldo))
+
+        st.divider()
+
+        # ================= DESPESAS =================
+        if page == "🧾 Despesas":
+            st.subheader("🧾 Despesas")
+
+
+            # ===== RELATÓRIO PDF =====
+            from reportlab.lib.pagesizes import A4
+            from reportlab.pdfgen import canvas
+            import tempfile
+
+            # ================= COMPLEMENTO (APENAS ADICIONADO) =================
+            # PDF em formato de TABELA + botão "Voltar ao app"
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+            from reportlab.lib import colors
+
+            col_pdf1, col_pdf2 = st.columns([1.2, 1.2])
+
+            if col_pdf1.button("📄 Gerar PDF (Tabela)"):
+
+                data = repos.list_payments(
+                    st.session_state.user_id, month, year
+                )
+
+                tmp_tbl = tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".pdf"
+                )
+
+                doc = SimpleDocTemplate(
+                    tmp_tbl.name,
+                    pagesize=A4,
+                    rightMargin=36,
+                    leftMargin=36,
+                    topMargin=36,
+                    bottomMargin=36,
+                )
+
+                table_data = []
+                table_data.append(
+                    [f"Despesas - {month_label}/{year}", "", "", ""]
+                )
+                table_data.append(
+                    ["Descrição", "Categoria", "Valor (R$)", "Status"]
+                )
+
+                total_tbl = 0.0
+
+                for r in data:
+                    nome = (r.get("description") or "").strip()
+                    categoria = (r.get("category") or "").strip()
+                    valor = float(r.get("amount") or 0)
+                    pago = r.get("paid")
+
+                    total_tbl += valor
+
+                    status = (
+                        "Pago"
+                        if str(pago).lower() in ["true", "t", "1"]
+                        else "Em aberto"
+                    )
+
+                    table_data.append(
+                        [nome, categoria, fmt_brl(valor), status]
+                    )
+
+                table_data.append(
+                    ["TOTAL", "", fmt_brl(total_tbl), ""]
+                )
+
+                table = Table(
+                    table_data, colWidths=[220, 120, 90, 90]
+                )
+
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("SPAN", (0, 0), (-1, 0)),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, 0), 14),
+                            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                            ("BACKGROUND", (0, 1), (-1, 1), colors.lightgrey),
+                            ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
+                            ("GRID", (0, 1), (-1, -1), 0.6, colors.grey),
+                            ("ALIGN", (2, 2), (2, -1), "RIGHT"),
+                            ("ALIGN", (3, 2), (3, -2), "CENTER"),
+                            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                            ("BACKGROUND", (0, -1), (-1, -1), colors.whitesmoke),
+                        ]
+                    )
+                )
+
+                doc.build([table])
+
+                st.session_state.pdf_relatorio_path = tmp_tbl.name
+                st.session_state.pdf_relatorio_nome = (
+                    f"despesas_tabela_{month}_{year}.pdf"
+                )
+
+                st.success("PDF gerado com sucesso!")
+                st.rerun()
+
+
+
+            if st.session_state.pdf_relatorio_path:
+                with open(st.session_state.pdf_relatorio_path, "rb") as f:
+                    st.download_button(
+                        "⬇️ Baixar PDF (Tabela)",
+                        f,
+                        file_name=st.session_state.pdf_relatorio_nome or f"despesas_tabela_{month}_{year}.pdf",
+                        mime="application/pdf"
+                    )
+
+                if col_pdf2.button("⬅️ Voltar ao app"):
+                    st.session_state.pdf_relatorio_path = None
+                    st.session_state.pdf_relatorio_nome = None
+                    st.rerun()
+
+            # ===== RESTANTE DO CÓDIGO ORIGINAL =====
+
+            cats = repos.list_categories(st.session_state.user_id)
+            cat_map = {r["name"]: r["id"] for r in cats}
+            cat_names = ["(Sem categoria)"] + list(cat_map.keys())
+
+            card_cat_ids = [r["id"] for r in cats if r.get("name") and "cart" in str(r.get("name")).lower()]
+            credit_rows = [r for r in rows if (r.get("category_id") in card_cat_ids)]
+
+            if credit_rows:
+                open_credit = [r for r in credit_rows if not r.get("paid")]
+                total_fatura = sum(float(r.get("amount") or 0) for r in open_credit)
+
+                st.divider()
+                st.subheader("💳 Fatura do cartão")
+
+
+                cA, cB = st.columns([2.2, 1.2])
+                cA.metric("Total em aberto", fmt_brl(total_fatura))
+
+                if open_credit:
+                    if cB.button("💰 Pagar fatura do cartão", key="pay_card"):
+                        repos.mark_credit_invoice_paid(st.session_state.user_id, month, year)
+                        st.session_state.msg_ok = "Fatura do cartão marcada como paga!"
+                        st.rerun()
+                else:
+                    if cB.button("🔄 Desfazer pagamento da fatura", key="unpay_card"):
+                        repos.unmark_credit_invoice_paid(st.session_state.user_id, month, year)
+                        st.session_state.msg_ok = "Pagamento da fatura desfeito!"
+                        st.rerun()
+
+            with st.expander("➕ Adicionar despesa", expanded=True):
+                with st.form("form_add_despesa", clear_on_submit=True):
+                    a1, a2, a3, a4, a5, a6 = st.columns([3, 1, 1.3, 1.3, 2, 1])
+
+                    desc = a1.text_input("Descrição")
+                    val = a2.number_input("Valor (R$)", min_value=0.0, step=10.0)
+
+                    compra = a3.date_input(
+                        "Data da compra",
+                        value=date.today(),
+                        format="DD/MM/YYYY"
+                    )
+
+                    venc = a4.date_input(
+                        "Vencimento",
+                        value=date.today(),
+                        format="DD/MM/YYYY"
+                    )
+
+                    cat_name = a5.selectbox("Categoria", cat_names)
+                    parcelas = a6.number_input("Parcelas", min_value=1, step=1, value=1)
+                    tipo_parcela = st.radio(
+                         "Tipo de valor",
+                         ["Valor total da compra", "Valor já é por parcela"],
+                         horizontal=True
+                    )
+
+                    submitted = st.form_submit_button("Adicionar")
+
+
+            if submitted:
+                if not desc.strip():
+                    st.warning("Informe a descrição da despesa.")
+                elif val <= 0:
+                    st.warning("Informe um valor maior que zero.")
+                else:
+                    cid = None if cat_name == "(Sem categoria)" else cat_map[cat_name]
+
+                    repos.add_payment(
+                        st.session_state.user_id,
+                        desc.strip(),
+                        float(val),
+                        str(compra),   # 👈 NOVO
+                        str(venc),
+                        venc.month,    # 👈 mês baseado no vencimento
+                        venc.year, 
+                        cid,
+                        is_credit=True if parcelas > 1 else False,
+                        installments=int(parcelas),
+                        parcel_type="total"
+                            if tipo_parcela == "Valor total da compra"
+                            else "unit"
+                    )
+
+                    st.session_state.msg_ok = "Despesa cadastrada com sucesso!"
+                    st.rerun()
+
+            st.divider()
+
+            if df.empty:
+                st.info("Nenhuma despesa cadastrada.")
+            else:
+                for r in rows:
+                    pid = r.get("id")
+                    desc_r = r.get("description")
+                    amount = r.get("amount")
+                    due = r.get("due_date")
+                    purchase = r.get("purchase_date")
+                    paid = r.get("paid")
+                    cat_name_r = r.get("category")
+
+                    is_credit = r.get("is_credit")
+                    installments = r.get("installments") or 1
+                    credit_group = r.get("credit_group")
+                    
+                    status_color = "#16a34a" if paid else "#dc2626"
+                    status_text = "✅ Pago" if paid else "🕓 Em aberto"
+                    
+                    with st.container(border=True):
+                        
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+                            f'<div>'
+                            f'<div style="font-size:18px;font-weight:600;">🧾 {desc_r}</div>'
+                            f'<div style="opacity:0.7;font-size:13px;">🏷️ {cat_name_r if cat_name_r else ""}</div>'
+                            f'</div>'
+                            f'<div style="background:{status_color};padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;">'
+                            f'{status_text}'
+                            f'</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">'
+                            f'<div style="font-size:22px;font-weight:700;">{fmt_brl(amount)}</div>'
+                            f'<div style="opacity:0.7;font-size:14px;">Venc: {format_date_br(due)}</div>'
+                            f'<div style="opacity:0.7;font-size:12px;">Compra: {format_date_br(purchase)}</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+                        col_btn1, col_btn2, col_btn3 = st.columns([1,1,1], gap="small")
+
+                        with col_btn1:
+                            if not paid:
+                                if st.button("Pagar", key=f"pay_{pid}", use_container_width=True):
+                                    repos.mark_paid(st.session_state.user_id, pid, True)
+                                    st.session_state.msg_ok = "Despesa marcada como paga!"
+                                    st.rerun()
+                            else:
+                                if st.button("Desfazer", key=f"unpay_{pid}", use_container_width=True):
+                                    repos.mark_paid(st.session_state.user_id, pid, False)
+                                    st.session_state.msg_ok = "Pagamento desfeito!"
+                                    st.rerun()
+
+                        with col_btn2:
+                            if st.button("Editar", key=f"edit_{pid}", use_container_width=True):
+                                st.session_state.edit_id = pid
+                                st.rerun()
+
+                        with col_btn3:
+                            if st.button("Excluir", key=f"del_{pid}", use_container_width=True):
+                                repos.delete_payment(st.session_state.user_id, pid)
+                                st.session_state.msg_ok = "Despesa excluída!"
+                                st.rerun()
+                                
+                    if is_credit and int(installments) > 1 and credit_group:
+                        with st.expander("🧩 Compra parcelada"):
+                            if st.button("🗑️ Excluir parcelas em aberto", key=f"del_open_{credit_group}_{pid}"):
+                                repos.delete_credit_group(
+                                    st.session_state.user_id,
+                                    credit_group,
+                                    only_open=True
+                                )
+                                st.session_state.msg_ok = "Parcelas em aberto excluídas!"
+                                st.rerun()
+
+
+                            if st.button("❌ Excluir TODA a compra parcelada", key=f"del_all_{credit_group}_{pid}"):
+                                repos.delete_credit_group(
+                                    st.session_state.user_id,
+                                    credit_group,
+                                    only_open=False
+                                )
+                                st.session_state.msg_ok = "Compra parcelada excluída!"
+                                st.rerun()
+
+
+                    if st.session_state.edit_id == pid:
+                        with st.form(f"edit_form_{pid}", clear_on_submit=False):
+                            n_desc = st.text_input("Descrição", value=str(desc_r or ""))
+                            n_val = st.number_input("Valor", value=float(amount or 0), step=10.0)
+                            n_compra = st.date_input(
+                                "Data da compra",
+                                value=datetime.fromisoformat(str(purchase)).date() if purchase else date.today()
+                            )
+                            n_venc = st.date_input(
+                                "Vencimento",
+                                value=datetime.fromisoformat(str(due)).date() if due else date.today()
+                            )
+
+                            cats2 = repos.list_categories(st.session_state.user_id)
+                            cat_map2 = {rr["name"]: rr["id"] for rr in cats2}
+                            cat_names2 = ["(Sem categoria)"] + list(cat_map2.keys())
+                            current_cat = cat_name_r if cat_name_r in cat_map2 else "(Sem categoria)"
+
+
+                            n_cat_name = st.selectbox(
+                                "Categoria",
+                                cat_names2,
+                                index=cat_names2.index(current_cat)
+                            )
+
+                            col1, col2 = st.columns(2)
+                            salvar = col1.form_submit_button("Salvar")
+                            cancelar = col2.form_submit_button("Cancelar")
+
+
+                        if salvar:
+                            cid2 = None if n_cat_name == "(Sem categoria)" else cat_map2[n_cat_name]
+                            repos.update_payment(
+                                st.session_state.user_id,
+                                pid,
+                                n_desc.strip(),
+                                float(n_val),
+                                str(n_compra),
+                                str(n_venc),
+                                cid2
+                            )
+                            st.session_state.edit_id = None
+                            st.session_state.msg_ok = "Despesa atualizada com sucesso!"
+                            st.rerun()
+
+
+                        if cancelar:
+                            st.session_state.edit_id = None
+                            st.rerun()
+                            
+        if page == "📊 Dashboard":
+            st.subheader("📊 Dashboard")
+            if not df.empty:
+                fig = px.pie(df, names="category", values="amount")
+                st.plotly_chart(fig, use_container_width=True)
+
+        if page == "🏷️ Categorias":
+            st.subheader("🏷️ Categorias")
+
+            with st.form("form_categoria", clear_on_submit=True):
+                new_cat = st.text_input("Nova categoria")
+                submitted_cat = st.form_submit_button("Adicionar")
+
+            if submitted_cat and new_cat.strip():
+                repos.create_category(st.session_state.user_id, new_cat.strip())
+                st.session_state.msg_ok = "Categoria cadastrada com sucesso!"
+                st.rerun()
+
+            for r in repos.list_categories(st.session_state.user_id):
+                cid = r.get("id")
+                name = r.get("name")
+
+                a, b = st.columns([4, 1])
+                a.write(name)
+
+                if b.button("Excluir", key=f"cat_del_{cid}"):
+                    repos.delete_category(st.session_state.user_id, cid)
+                    st.session_state.msg_ok = "Categoria excluída!"
+                    st.rerun()
+
+        if page == "💰 Planejamento":
+            st.subheader("💰 Planejamento")
+            renda_v = st.number_input("Renda", value=float(renda))
+            meta_v = st.number_input("Meta de gastos", value=float(budget["expense_goal"]))
+            if st.button("Salvar"):
+                repos.upsert_budget(st.session_state.user_id, month, year, renda_v, meta_v)
+                st.session_state.msg_ok = "Planejamento salvo com sucesso!"
+                st.rerun()
+
+
+    except Exception as e:
+        st.exception(e)
+        st.stop()
+
+
+# ================= ROUTER =================
+if st.session_state.user_id is None:
+    screen_auth()
+else:
+    screen_app()
