@@ -245,7 +245,7 @@ def screen_app():
                     [f"Despesas - {month_label}/{year}", "", ""]
                 )
                 table_data.append(
-                    ["Descrição", "Categoria", "Valor (R$)", "Status"]
+                    ["Descrição", "Valor (R$)", "Status"]
                 )
 
                 total_tbl = 0.0
