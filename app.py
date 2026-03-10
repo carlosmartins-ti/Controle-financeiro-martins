@@ -245,13 +245,14 @@ def screen_app():
                     [f"Despesas - {month_label}/{year}", "", ""]
                 )
                 table_data.append(
-                    ["Descrição", "Valor (R$)", "Status"]
+                    ["Descrição", "Categoria", "Valor (R$)", "Status"]
                 )
 
                 total_tbl = 0.0
 
                 for r in data:
                     nome = (r.get("description") or "").strip()
+                    categoria = (r.get("category") or "").strip()
                     valor = float(r.get("amount") or 0)
                     pago = r.get("paid")
 
@@ -264,15 +265,15 @@ def screen_app():
                     )
 
                     table_data.append(
-                        [nome, fmt_brl(valor), status]
+                        [nome, categoria, fmt_brl(valor), status]
                     )
 
                 table_data.append(
-                    ["TOTAL", fmt_brl(total_tbl), ""]
+                    ["TOTAL", "", fmt_brl(total_tbl), ""]
                 )
 
                 table = Table(
-                    table_data, colWidths=[260, 100, 100]
+                    table_data, colWidths=[220, 120, 90, 90]
                 )
 
                 table.setStyle(
@@ -285,8 +286,8 @@ def screen_app():
                             ("BACKGROUND", (0, 1), (-1, 1), colors.lightgrey),
                             ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
                             ("GRID", (0, 1), (-1, -1), 0.6, colors.grey),
-                            ("ALIGN", (1, 2), (1, -1), "RIGHT"),
-                            ("ALIGN", (2, 2), (2, -2), "CENTER"),
+                            ("ALIGN", (2, 2), (2, -1), "RIGHT"),
+                            ("ALIGN", (3, 2), (3, -2), "CENTER"),
                             ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
                             ("BACKGROUND", (0, -1), (-1, -1), colors.whitesmoke),
                         ]
